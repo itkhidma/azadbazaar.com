@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { searchProducts } from '@/services/productService';
+import { getAllCategories } from '@/services/categoryService';
 import { Product } from '@/types';
 
 interface SearchBarProps {
@@ -16,6 +17,7 @@ export default function SearchBar({ className, placeholder = "Search products...
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -143,6 +145,19 @@ export default function SearchBar({ className, placeholder = "Search products...
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await getAllCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
+
   // Cleanup debounce timer
   useEffect(() => {
     return () => {
@@ -153,7 +168,11 @@ export default function SearchBar({ className, placeholder = "Search products...
   }, []);
 
   const getCategoryName = (category: any): string => {
-    return typeof category === 'string' ? category : category?.name || 'Unknown';
+    if (typeof category === 'string') {
+      const cat = categories.find((c) => c.id === category);
+      return cat?.name || 'Unknown';
+    }
+    return category?.name || 'Unknown';
   };
 
   return (
