@@ -29,9 +29,6 @@ export const getAllProducts = async (): Promise<Product[]> => {
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-      expiryDate: doc.data().expiryDate 
-        ? (doc.data().expiryDate as Timestamp).toDate() 
-        : undefined,
     })) as Product[];
   } catch (error: any) {
     throw new Error(error.message);
@@ -51,9 +48,6 @@ export const getProductById = async (id: string): Promise<Product | null> => {
         ...data,
         createdAt: (data.createdAt as Timestamp).toDate(),
         updatedAt: (data.updatedAt as Timestamp).toDate(),
-        expiryDate: data.expiryDate 
-          ? (data.expiryDate as Timestamp).toDate() 
-          : undefined,
       } as Product;
     }
     
@@ -78,9 +72,6 @@ export const getProductsByCategory = async (category: string): Promise<Product[]
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-      expiryDate: doc.data().expiryDate 
-        ? (doc.data().expiryDate as Timestamp).toDate() 
-        : undefined,
     })) as Product[];
   } catch (error: any) {
     throw new Error(error.message);
@@ -99,9 +90,6 @@ export const searchProducts = async (searchTerm: string): Promise<Product[]> => 
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-      expiryDate: doc.data().expiryDate 
-        ? (doc.data().expiryDate as Timestamp).toDate() 
-        : undefined,
     })) as Product[];
     
     return products.filter(product => 
@@ -172,9 +160,6 @@ export const getBestSellerProducts = async (limitCount: number = 8): Promise<Pro
         ...doc.data(),
         createdAt: (doc.data().createdAt as Timestamp).toDate(),
         updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-        expiryDate: doc.data().expiryDate 
-          ? (doc.data().expiryDate as Timestamp).toDate() 
-          : undefined,
       })) as Product[];
     }
     
@@ -193,9 +178,6 @@ export const getBestSellerProducts = async (limitCount: number = 8): Promise<Pro
         ...doc.data(),
         createdAt: (doc.data().createdAt as Timestamp).toDate(),
         updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-        expiryDate: doc.data().expiryDate 
-          ? (doc.data().expiryDate as Timestamp).toDate() 
-          : undefined,
       })) as Product[];
     }
     
@@ -212,9 +194,6 @@ export const getBestSellerProducts = async (limitCount: number = 8): Promise<Pro
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-      expiryDate: doc.data().expiryDate 
-        ? (doc.data().expiryDate as Timestamp).toDate() 
-        : undefined,
     })) as Product[];
   }
 };
@@ -235,9 +214,6 @@ export const getNewArrivals = async (limitCount: number = 8): Promise<Product[]>
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
-      expiryDate: doc.data().expiryDate 
-        ? (doc.data().expiryDate as Timestamp).toDate() 
-        : undefined,
     })) as Product[];
   } catch (error: any) {
     throw new Error(error.message);
