@@ -35,6 +35,10 @@ export default function AddProductPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string>('');
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [isDraggingVideo, setIsDraggingVideo] = useState(false);
+  const [imageDragCounter, setImageDragCounter] = useState(0);
+  const [videoDragCounter, setVideoDragCounter] = useState(0);
 
   useEffect(() => {
     loadCategories();
@@ -85,6 +89,8 @@ export default function AddProductPage() {
   const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDraggingImage(false);
+    setImageDragCounter(0);
     
     const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
     
@@ -104,6 +110,25 @@ export default function AddProductPage() {
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+  };
+
+  const handleImageDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragCounter(prev => prev + 1);
+    setIsDraggingImage(true);
+  };
+
+  const handleImageDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragCounter(prev => {
+      const newCount = prev - 1;
+      if (newCount === 0) {
+        setIsDraggingImage(false);
+      }
+      return newCount;
+    });
   };
 
   const removeImage = (index: number) => {
@@ -137,6 +162,8 @@ export default function AddProductPage() {
   const handleVideoDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDraggingVideo(false);
+    setVideoDragCounter(0);
     
     const file = e.dataTransfer.files[0];
     if (!file) return;
@@ -158,6 +185,24 @@ export default function AddProductPage() {
     setError('');
   };
 
+  const handleVideoDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setVideoDragCounter(prev => prev + 1);
+    setIsDraggingVideo(true);
+  };
+
+  const handleVideoDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setVideoDragCounter(prev => {
+      const newCount = prev - 1;
+      if (newCount === 0) {
+        setIsDraggingVideo(false);
+      }
+      return newCount;
+    });
+  };
   const removeVideo = () => {
     setVideoFile(null);
     setVideoPreview('');
@@ -279,13 +324,21 @@ export default function AddProductPage() {
               <div
                 onDrop={handleImageDrop}
                 onDragOver={handleDragOver}
+                onDragEnter={handleImageDragEnter}
+                onDragLeave={handleImageDragLeave}
                 className="relative"
               >
-                <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-lg cursor-pointer transition ${
+                  isDraggingImage 
+                    ? 'border-purple-600 bg-purple-100 scale-105' 
+                    : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'
+                }`}>
+                  <svg className={`w-8 h-8 transition ${isDraggingImage ? 'text-purple-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  <span className="text-xs text-gray-500 mt-2">Add Image</span>
+                  <span className={`text-xs mt-2 transition ${isDraggingImage ? 'text-purple-600 font-semibold' : 'text-gray-500'}`}>
+                    {isDraggingImage ? 'Drop here!' : 'Add Image'}
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
@@ -431,12 +484,20 @@ export default function AddProductPage() {
             <div
               onDrop={handleVideoDrop}
               onDragOver={handleDragOver}
+              onDragEnter={handleVideoDragEnter}
+              onDragLeave={handleVideoDragLeave}
             >
-              <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-lg cursor-pointer transition ${
+                isDraggingVideo 
+                  ? 'border-purple-600 bg-purple-100 scale-105' 
+                  : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'
+              }`}>
+                <svg className={`w-8 h-8 transition ${isDraggingVideo ? 'text-purple-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <span className="text-xs text-gray-500 mt-2">Add Video</span>
+                <span className={`text-xs mt-2 transition ${isDraggingVideo ? 'text-purple-600 font-semibold' : 'text-gray-500'}`}>
+                  {isDraggingVideo ? 'Drop video here!' : 'Add Video'}
+                </span>
                 <input
                   type="file"
                   accept="video/*"
