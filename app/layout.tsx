@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Jam Store - Delicious Homemade Jams',
+  title: 'Azad Bazaar - Delicious Homemade Jams',
   description: 'Shop premium quality homemade jams',
 };
 

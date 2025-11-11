@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
-          folder: 'jam-ecommerce/products',
+          folder: 'azad-bazaar/products',
           resource_type: 'auto',
         },
         (error, result) => {

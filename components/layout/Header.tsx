@@ -61,7 +61,7 @@ export default function Header() {
             />
             <span
               className="text-1xl font-bold text-black leading-none select-none">
-              JAM Store
+              Azad Bazaar
             </span>
           </Link>
 

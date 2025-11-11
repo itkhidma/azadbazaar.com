@@ -1,4 +1,4 @@
-# Jam Ecommerce Web Application
+# Azad Bazaar Web Application
 
 ## How to run
 First install all the packages and libraries

@@ -12,12 +12,20 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           {/* Company Info */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl">J</span>
-              </div>
-              <h3 className="text-white text-xl font-bold">JAM Store</h3>
-            </div>
+            <Link href="/" className="flex items-center gap-3 flex-shrink-0">
+              <Image
+                src="/images/logo.png"
+                alt="Logo"
+                width={150}
+                height={40}
+                className="h-10 w-auto"
+                priority
+              />
+              <span
+                className="text-1xl font-bold text-white leading-none select-none">
+                Azad Bazaar
+              </span>
+          </Link>
             <p className="text-sm text-gray-400 leading-relaxed">
               Your one-stop destination for premium jams and preserves. 
               Fresh, delicious, and delivered with love.
@@ -237,7 +245,7 @@ export default function Footer() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
             <p>
-              © {currentYear} <span className="text-purple-400 font-semibold">JAM Store</span>. All rights reserved.
+              © {currentYear} <span className="text-purple-400 font-semibold">Azad Bazaar</span>. All rights reserved.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               <a href="#" className="hover:text-purple-400 transition-colors">
