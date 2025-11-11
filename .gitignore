@@ -10,8 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
-/lib/cloudinary.ts
-/lib/firebase.ts
+# Note: lib helpers are tracked now; remove specific ignores if you intentionally want to keep them out.
+# /lib/cloudinary.ts
+# /lib/firebase.ts
 
 # testing
 /coverage
