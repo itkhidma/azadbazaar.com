@@ -14,7 +14,7 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-3 flex-shrink-0">
               <Image
-                src="/images/logo.png"
+                src="/images/logo-white.png"
                 alt="Logo"
                 width={150}
                 height={40}
@@ -27,8 +27,8 @@ export default function Footer() {
               </span>
           </Link>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Your one-stop destination for premium jams and preserves. 
-              Fresh, delicious, and delivered with love.
+              Your one-stop destination for premium products. 
+              Premium, high-quality, and delivered with love.
             </p>
             
             {/* Social Links */}

@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CartItem as CartItemType } from '@/types';
+import { useEffect, useState } from 'react';
+import { getAllCategories } from '@/services/categoryService';
 
 interface CartItemProps {
   item: CartItemType;
@@ -14,6 +16,23 @@ interface CartItemProps {
 export default function CartItem({ item, onUpdateQuantity, onRemove, loading }: CartItemProps) {
   const { product, quantity, productId } = item;
   const subtotal = product.price * quantity;
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const categoriesData = await getAllCategories();
+      setCategories(categoriesData);
+    };
+    loadCategories();
+  }, []);
+
+  const getCategoryName = (category: string | any) => {
+    if (typeof category === 'string') {
+      const cat = categories.find((c) => c.id === category);
+      return cat?.name || 'Unknown';
+    }
+    return category?.name || 'Unknown';
+  };
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1 && newQuantity <= product.stock) {
@@ -51,7 +70,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, loading }: 
             {/* Category Badge */}
             <div className="flex items-center gap-2 mt-2">
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                {typeof product.category === 'string' ? product.category : product.category.name}
+                {getCategoryName(product.category)}
               </span>
               {product.stock < 10 && product.stock > 0 && (
                 <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-medium">

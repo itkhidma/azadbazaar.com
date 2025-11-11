@@ -4,25 +4,39 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getNewArrivals } from '@/services/productService';
-import { Product } from '@/types';
+import { getAllCategories } from '@/services/categoryService';
+import { Product, Category } from '@/types';
 
 export default function NewArrivals() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadNewArrivals();
+    loadData();
   }, []);
 
-  const loadNewArrivals = async () => {
+  const loadData = async () => {
     try {
-      const data = await getNewArrivals(8);
-      setProducts(data);
+      const [productsData, categoriesData] = await Promise.all([
+        getNewArrivals(8),
+        getAllCategories()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Error loading new arrivals:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCategoryName = (categoryId: string | Category): string => {
+    if (typeof categoryId === 'object' && categoryId.name) {
+      return categoryId.name;
+    }
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Unknown';
   };
 
   // Check if product is new (added within last 30 days)
@@ -130,19 +144,14 @@ export default function NewArrivals() {
                 
                 {/* Category */}
                 <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2 truncate">
-                  {typeof product.category === 'string' ? product.category : product.category.name}
+                  {getCategoryName(product.category)}
                 </p>
 
                 {/* Price */}
                 <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm md:text-lg lg:text-xl font-bold text-purple-600">
-                      ₹{product.price}
-                    </span>
-                    {product.weight && (
-                      <span className="text-[10px] md:text-xs text-gray-500 ml-0.5 md:ml-1">/ {product.weight}</span>
-                    )}
-                  </div>
+                  <span className="text-sm md:text-lg lg:text-xl font-bold text-purple-600">
+                    ₹{product.price}
+                  </span>
                   
                   {/* Add to Cart Button */}
                   <button className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 md:p-2 rounded-lg transition shadow-md">

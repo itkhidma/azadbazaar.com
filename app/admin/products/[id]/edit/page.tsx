@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getProductById, updateProduct, deleteProduct } from '@/services/productService';
 import { getAllCategories } from '@/services/categoryService';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import { uploadToCloudinary, uploadVideoToCloudinary } from '@/lib/cloudinary';
 import { Product, Category } from '@/types';
 import Image from 'next/image';
+import RichTextEditor from '@/components/common/RichTextEditor';
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(true);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -27,15 +29,16 @@ export default function EditProductPage() {
     price: '',
     cost: '',
     stock: '',
-    weight: '',
     category: '',
-    ingredients: '',
-    expiryDate: '',
   });
   
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string>('');
+  const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
+  const [newVideoPreview, setNewVideoPreview] = useState<string>('');
+  const [removeVideo, setRemoveVideo] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -65,14 +68,10 @@ export default function EditProductPage() {
           price: product.price.toString(),
           cost: product.cost?.toString() || '',
           stock: product.stock.toString(),
-          weight: product.weight || '',
           category: typeof product.category === 'string' ? product.category : product.category.id,
-          ingredients: product.ingredients?.join(', ') || '',
-          expiryDate: product.expiryDate 
-            ? new Date(product.expiryDate).toISOString().split('T')[0] 
-            : '',
         });
         setExistingImages(product.imageUrls || []);
+        setExistingVideoUrl(product.videoUrl || '');
       }
     } catch (error) {
       setError('Failed to load product');
@@ -85,6 +84,13 @@ export default function EditProductPage() {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleDescriptionChange = (html: string) => {
+    setFormData({
+      ...formData,
+      description: html,
     });
   };
 
@@ -103,6 +109,29 @@ export default function EditProductPage() {
     setError('');
   };
 
+  const handleNewImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    
+    if (files.length + existingImages.length + newImageFiles.length > 5) {
+      setError('Maximum 5 images allowed');
+      return;
+    }
+
+    setNewImageFiles([...newImageFiles, ...files]);
+    
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setNewImagePreviews([...newImagePreviews, ...newPreviews]);
+    setError('');
+  };
+
+  const handleImageDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const removeExistingImage = (index: number) => {
     const newImages = existingImages.filter((_, i) => i !== index);
     setExistingImages(newImages);
@@ -115,7 +144,7 @@ export default function EditProductPage() {
     setNewImagePreviews(newPreviews);
   };
 
-  // Drag and Drop for existing images
+  // Drag and Drop for existing images (reordering)
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -135,6 +164,64 @@ export default function EditProductPage() {
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+  };
+
+  const handleNewVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      setError('Please select a valid video file');
+      return;
+    }
+
+    // Validate file size (e.g., max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Video file size must be less than 50MB');
+      return;
+    }
+
+    setNewVideoFile(file);
+    setNewVideoPreview(URL.createObjectURL(file));
+    setRemoveVideo(false);
+    setError('');
+  };
+
+  const handleNewVideoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      setError('Please select a valid video file');
+      return;
+    }
+
+    // Validate file size (e.g., max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Video file size must be less than 50MB');
+      return;
+    }
+
+    setNewVideoFile(file);
+    setNewVideoPreview(URL.createObjectURL(file));
+    setRemoveVideo(false);
+    setError('');
+  };
+
+  const handleRemoveVideo = () => {
+    if (newVideoFile) {
+      // Remove newly selected video
+      setNewVideoFile(null);
+      setNewVideoPreview('');
+    } else {
+      // Mark existing video for removal
+      setRemoveVideo(true);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,19 +254,31 @@ export default function EditProductPage() {
       // Combine existing and new image URLs
       const allImageUrls = [...existingImages, ...newImageUrls];
 
+      // Handle video upload
+      let finalVideoUrl: string | undefined = existingVideoUrl;
+      if (newVideoFile) {
+        setUploadingVideo(true);
+        finalVideoUrl = await uploadVideoToCloudinary(newVideoFile);
+        setUploadingVideo(false);
+      } else if (removeVideo) {
+        finalVideoUrl = undefined;
+      }
+
       // Prepare product data
-      const productData: Partial<Product> = {
+      const productData: any = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
         cost: parseFloat(formData.cost) || 0,
         stock: parseInt(formData.stock),
-        weight: formData.weight || undefined,
         category: formData.category,
-        ingredients: formData.ingredients ? formData.ingredients.split(',').map(i => i.trim()) : [],
-        expiryDate: formData.expiryDate ? new Date(formData.expiryDate) : undefined,
         imageUrls: allImageUrls,
       };
+
+      // Only add videoUrl if it exists (not undefined)
+      if (finalVideoUrl) {
+        productData.videoUrl = finalVideoUrl;
+      }
 
       // Update product in Firestore
       await updateProduct(productId, productData);
@@ -190,6 +289,7 @@ export default function EditProductPage() {
       setError(err.message || 'Failed to update product');
       setLoading(false);
       setUploadingImages(false);
+      setUploadingVideo(false);
     }
   };
 
@@ -232,7 +332,7 @@ export default function EditProductPage() {
             Product Images <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-500 mb-3">
-            Drag to reorder. First image will be the main image. Maximum 5 images.
+            Drag to reorder. Drag & drop or click to add new images. First image will be the main image. Maximum 5 images.
           </p>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -302,19 +402,24 @@ export default function EditProductPage() {
             
             {/* Add More Images */}
             {existingImages.length + newImageFiles.length < 5 && (
-              <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-xs text-gray-500 mt-2">Add Image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleNewImageSelect}
-                  className="text-black hidden"
-                />
-              </label>
+              <div
+                onDrop={handleNewImageDrop}
+                onDragOver={handleImageDragOver}
+              >
+                <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-xs text-gray-500 mt-2">Add Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleNewImageSelect}
+                    className="text-black hidden"
+                  />
+                </label>
+              </div>
             )}
           </div>
         </div>
@@ -359,18 +464,19 @@ export default function EditProductPage() {
             </select>
           </div>
 
-          {/* Weight */}
+          {/* Stock */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Weight
+              Stock Quantity <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              name="weight"
-              value={formData.weight}
+              type="number"
+              name="stock"
+              value={formData.stock}
               onChange={handleChange}
-              placeholder="e.g., 250g, 500g"
+              min="0"
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              required
             />
           </div>
 
@@ -406,36 +512,6 @@ export default function EditProductPage() {
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
           </div>
-
-          {/* Stock */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Stock Quantity <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="stock"
-              value={formData.stock}
-              onChange={handleChange}
-              min="0"
-              className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          {/* Expiry Date */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Expiry Date
-            </label>
-            <input
-              type="date"
-              name="expiryDate"
-              value={formData.expiryDate}
-              onChange={handleChange}
-              className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
-          </div>
         </div>
 
         {/* Description */}
@@ -443,29 +519,69 @@ export default function EditProductPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Description <span className="text-red-500">*</span>
           </label>
-          <textarea
-            name="description"
+          <RichTextEditor
             value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            required
+            onChange={handleDescriptionChange}
+            placeholder="Describe your product... (You can include weight, ingredients, expiry date, or any other details here)"
           />
         </div>
 
-        {/* Ingredients */}
+        {/* Product Video */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Ingredients
+            Product Video (Optional)
           </label>
-          <input
-            type="text"
-            name="ingredients"
-            value={formData.ingredients}
-            onChange={handleChange}
-            placeholder="Strawberries, Sugar, Pectin, Citric Acid (comma separated)"
-            className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          />
+          <p className="text-xs text-gray-500 mb-3">Upload a product demo or promo video (max 50MB). Drag & drop or click to browse.</p>
+          
+          {newVideoPreview ? (
+            <div className="relative">
+              <video
+                src={newVideoPreview}
+                controls
+                className="w-full max-h-64 rounded-lg border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveVideo}
+                className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition"
+              >
+                Remove Video
+              </button>
+            </div>
+          ) : existingVideoUrl && !removeVideo ? (
+            <div className="relative">
+              <video
+                src={existingVideoUrl}
+                controls
+                className="w-full max-h-64 rounded-lg border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveVideo}
+                className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition"
+              >
+                Remove Video
+              </button>
+            </div>
+          ) : (
+            <div
+              onDrop={handleNewVideoDrop}
+              onDragOver={handleImageDragOver}
+            >
+              <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span className="text-xs text-gray-500 mt-2">Add Video</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleNewVideoSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Buttons */}
@@ -491,7 +607,7 @@ export default function EditProductPage() {
             disabled={loading}
             className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploadingImages ? 'Uploading Images...' : loading ? 'Updating...' : 'Update Product'}
+            {uploadingImages ? 'Uploading Images...' : uploadingVideo ? 'Uploading Video...' : loading ? 'Updating...' : 'Update Product'}
           </button>
         </div>
       </form>

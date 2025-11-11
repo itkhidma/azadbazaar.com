@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { addProduct } from '@/services/productService';
 import { getAllCategories } from '@/services/categoryService';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import { uploadToCloudinary, uploadVideoToCloudinary } from '@/lib/cloudinary';
 import { useAuth } from '@/contexts/AuthContext';
 import { Category } from '@/types';
-
+import RichTextEditor from '@/components/common/RichTextEditor';
 
 import Image from 'next/image';
 
@@ -16,6 +16,7 @@ export default function AddProductPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [error, setError] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -26,15 +27,14 @@ export default function AddProductPage() {
     price: '',
     cost: '',
     stock: '',
-    weight: '',
     category: '',
-    ingredients: '',
-    expiryDate: '',
     createdBy: '',
   });
   
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string>('');
 
   useEffect(() => {
     loadCategories();
@@ -59,6 +59,13 @@ export default function AddProductPage() {
     });
   };
 
+  const handleDescriptionChange = (html: string) => {
+    setFormData({
+      ...formData,
+      description: html,
+    });
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
@@ -75,11 +82,85 @@ export default function AddProductPage() {
     setError('');
   };
 
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    
+    if (files.length + imageFiles.length > 5) {
+      setError('Maximum 5 images allowed');
+      return;
+    }
+
+    setImageFiles([...imageFiles, ...files]);
+    
+    // Create previews
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews([...imagePreviews, ...newPreviews]);
+    setError('');
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const removeImage = (index: number) => {
     const newFiles = imageFiles.filter((_, i) => i !== index);
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImageFiles(newFiles);
     setImagePreviews(newPreviews);
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      setError('Please select a valid video file');
+      return;
+    }
+
+    // Validate file size (e.g., max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Video file size must be less than 50MB');
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setError('');
+  };
+
+  const handleVideoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      setError('Please select a valid video file');
+      return;
+    }
+
+    // Validate file size (e.g., max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('Video file size must be less than 50MB');
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setError('');
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoPreview('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,20 +189,30 @@ export default function AddProductPage() {
       
       setUploadingImages(false);
 
+      // Upload video to Cloudinary if present
+      let videoUrl: string | undefined;
+      if (videoFile) {
+        setUploadingVideo(true);
+        videoUrl = await uploadVideoToCloudinary(videoFile);
+        setUploadingVideo(false);
+      }
+
       // Prepare product data
-      const productData = {
+      const productData: any = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
         cost: parseFloat(formData.cost) || 0,
         stock: parseInt(formData.stock),
-        weight: formData.weight || undefined,
         category: formData.category,
-        ingredients: formData.ingredients ? formData.ingredients.split(',').map(i => i.trim()) : [],
-        expiryDate: formData.expiryDate ? new Date(formData.expiryDate) : undefined,
         imageUrls,
         createdBy: user?.uid || 'admin', // Set creator user ID
       };
+
+      // Only add videoUrl if it exists
+      if (videoUrl) {
+        productData.videoUrl = videoUrl;
+      }
 
       // Add product to Firestore
       await addProduct(productData);
@@ -132,6 +223,7 @@ export default function AddProductPage() {
       setError(err.message || 'Failed to add product');
       setLoading(false);
       setUploadingImages(false);
+      setUploadingVideo(false);
     }
   };
 
@@ -154,7 +246,7 @@ export default function AddProductPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Product Images <span className="text-red-500">*</span>
           </label>
-          <p className="text-xs text-gray-500 mb-3">Upload up to 5 images. First image will be the main image.</p>
+          <p className="text-xs text-gray-500 mb-3">Upload up to 5 images. Drag & drop or click to browse. First image will be the main image.</p>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
             {imagePreviews.map((preview, index) => (
@@ -184,19 +276,25 @@ export default function AddProductPage() {
             ))}
             
             {imageFiles.length < 5 && (
-              <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-xs text-gray-500 mt-2">Add Image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-              </label>
+              <div
+                onDrop={handleImageDrop}
+                onDragOver={handleDragOver}
+                className="relative"
+              >
+                <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-xs text-gray-500 mt-2">Add Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             )}
           </div>
         </div>
@@ -212,7 +310,7 @@ export default function AddProductPage() {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="e.g., Strawberry Delight Jam"
+              placeholder="e.g., Oil Sprayer, Water Dispenser, Kitchen Mat"
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
             />
@@ -242,18 +340,20 @@ export default function AddProductPage() {
             </select>
           </div>
 
-          {/* Weight */}
+          {/* Stock */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Weight
+              Stock Quantity <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              name="weight"
-              value={formData.weight}
+              type="number"
+              name="stock"
+              value={formData.stock}
               onChange={handleChange}
-              placeholder="e.g., 250g, 500g"
+              placeholder="100"
+              min="0"
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
             />
           </div>
 
@@ -291,37 +391,6 @@ export default function AddProductPage() {
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
-
-          {/* Stock */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Stock Quantity <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="stock"
-              value={formData.stock}
-              onChange={handleChange}
-              placeholder="100"
-              min="0"
-              className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          {/* Expiry Date */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Expiry Date
-            </label>
-            <input
-              type="date"
-              name="expiryDate"
-              value={formData.expiryDate}
-              onChange={handleChange}
-              className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
         </div>
 
         {/* Description */}
@@ -329,31 +398,54 @@ export default function AddProductPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Description <span className="text-red-500">*</span>
           </label>
-          <textarea
-            name="description"
+          <RichTextEditor
             value={formData.description}
-            onChange={handleChange}
-            placeholder="Describe your product..."
-            rows={4}
-            className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            required
+            onChange={handleDescriptionChange}
+            placeholder="Describe your product... (You can include weight, ingredients, expiry date, or any other details here)"
           />
         </div>
 
-        {/* Ingredients */}
+        {/* Product Video */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Ingredients
+            Product Video (Optional)
           </label>
-          <input
-            type="text"
-            name="ingredients"
-            value={formData.ingredients}
-            onChange={handleChange}
-            placeholder="Strawberries, Sugar, Pectin, Citric Acid (comma separated)"
-            className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-          <p className="text-xs text-gray-500 mt-1">Separate ingredients with commas</p>
+          <p className="text-xs text-gray-500 mb-3">Upload a product demo or promo video (max 50MB). Drag & drop or click to browse.</p>
+          
+          {videoPreview ? (
+            <div className="relative">
+              <video
+                src={videoPreview}
+                controls
+                className="w-full max-h-64 rounded-lg border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={removeVideo}
+                className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition"
+              >
+                Remove Video
+              </button>
+            </div>
+          ) : (
+            <div
+              onDrop={handleVideoDrop}
+              onDragOver={handleDragOver}
+            >
+              <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span className="text-xs text-gray-500 mt-2">Add Video</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Buttons */}
@@ -371,7 +463,7 @@ export default function AddProductPage() {
             disabled={loading}
             className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploadingImages ? 'Uploading Images...' : loading ? 'Adding Product...' : 'Add Product'}
+            {uploadingImages ? 'Uploading Images...' : uploadingVideo ? 'Uploading Video...' : loading ? 'Adding Product...' : 'Add Product'}
           </button>
         </div>
       </form>

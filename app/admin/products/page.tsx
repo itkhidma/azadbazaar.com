@@ -4,32 +4,44 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAllProducts } from '@/services/productService';
+import { getAllCategories } from '@/services/categoryService';
 import { Product, Category } from '@/types';
 
 export default function ProductsListPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadProducts();
+    loadData();
   }, []);
 
-  const loadProducts = async () => {
+  const loadData = async () => {
     try {
-      const data = await getAllProducts();
-      setProducts(data);
+      const [productsData, categoriesData] = await Promise.all([
+        getAllProducts(),
+        getAllCategories()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const getCategoryName = (categoryId: string | Category): string => {
+    if (typeof categoryId === 'object' && categoryId.name) {
+      return categoryId.name;
+    }
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Unknown';
+  };
+
   const filteredProducts = products.filter(product => {
-    const categoryName = typeof product.category === 'string' 
-      ? product.category 
-      : product.category.name;
+    const categoryName = getCategoryName(product.category);
     
     return product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       categoryName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -90,7 +102,7 @@ export default function ProductsListPage() {
               <div className="p-4">
                 <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {typeof product.category === 'string' ? product.category : product.category.name}
+                  {getCategoryName(product.category)}
                 </p>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-purple-600">₹{product.price}</span>

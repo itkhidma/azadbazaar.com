@@ -1,16 +1,37 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Product } from '@/types';
+import { Product, Category } from '@/types';
+import { getAllCategories } from '@/services/categoryService';
 
 interface ProductGridProps {
   products: Product[];
 }
 
 export default function ProductGrid({ products }: ProductGridProps) {
-  const getCategoryName = (category: any): string => {
-    return typeof category === 'string' ? category : category?.name || 'Unknown';
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const data = await getAllCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const getCategoryName = (categoryId: string | Category): string => {
+    if (typeof categoryId === 'object' && categoryId.name) {
+      return categoryId.name;
+    }
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Unknown';
   };
 
   return (
@@ -53,16 +74,9 @@ export default function ProductGrid({ products }: ProductGridProps) {
               {product.description}
             </p>
             <div className="flex items-center justify-between">
-              <div>
-                <span className="text-lg font-bold text-purple-600">
-                  ₹{product.price}
-                </span>
-                {product.weight && (
-                  <span className="text-xs text-gray-500 ml-2">
-                    {product.weight}
-                  </span>
-                )}
-              </div>
+              <span className="text-lg font-bold text-purple-600">
+                ₹{product.price}
+              </span>
               <button className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition">
                 View
               </button>

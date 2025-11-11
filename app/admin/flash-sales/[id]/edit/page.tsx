@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { getAllProducts } from '@/services/productService';
 import { getFlashSaleById, updateFlashSale, deleteFlashSale } from '@/services/flashSaleService';
+import { getAllCategories } from '@/services/categoryService';
 import { Product, FlashSale } from '@/types';
 
 export default function EditFlashSalePage() {
@@ -15,6 +16,7 @@ export default function EditFlashSalePage() {
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,11 +34,20 @@ export default function EditFlashSalePage() {
     loadData();
   }, [flashSaleId]);
 
+  const getCategoryName = (category: string | any) => {
+    if (typeof category === 'string') {
+      const cat = categories.find((c) => c.id === category);
+      return cat?.name || 'Unknown';
+    }
+    return category?.name || 'Unknown';
+  };
+
   const loadData = async () => {
     try {
-      const [flashSale, productsData] = await Promise.all([
+      const [flashSale, productsData, categoriesData] = await Promise.all([
         getFlashSaleById(flashSaleId),
-        getAllProducts()
+        getAllProducts(),
+        getAllCategories()
       ]);
 
       if (!flashSale) {
@@ -45,6 +56,7 @@ export default function EditFlashSalePage() {
       }
 
       setProducts(productsData);
+      setCategories(categoriesData);
       const product = productsData.find(p => p.id === flashSale.productId);
       setSelectedProduct(product || null);
 
@@ -222,7 +234,7 @@ export default function EditFlashSalePage() {
                 <div className="space-y-1 text-sm text-gray-700">
                   <p><span className="font-semibold">Original Price:</span> ₹{selectedProduct.price}</p>
                   <p><span className="font-semibold">Available Stock:</span> {selectedProduct.stock} units</p>
-                  <p><span className="font-semibold">Category:</span> {typeof selectedProduct.category === 'string' ? selectedProduct.category : selectedProduct.category.name}</p>
+                  <p><span className="font-semibold">Category:</span> {getCategoryName(selectedProduct.category)}</p>
                 </div>
               </div>
             </div>

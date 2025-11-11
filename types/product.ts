@@ -7,12 +7,10 @@ export interface Product {
   description: string;
   price: number;
   cost: number;
-  expiryDate?: Date;
   imageUrls: string[]; // Cloudinary URLs
+  videoUrl?: string; // Optional: Cloudinary video URL
   category: Category | string; // Can be Category object or string (category ID/name)
   stock: number;
-  weight?: string; // e.g., "250g", "500g"
-  ingredients?: string[];
   createdBy: string; // User ID of the creator
   createdAt: Date;
   updatedAt: Date;

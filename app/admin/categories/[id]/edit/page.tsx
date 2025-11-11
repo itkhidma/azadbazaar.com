@@ -68,6 +68,30 @@ export default function EditCategoryPage() {
     setError('');
 };
 
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    
+    if (files.length === 0) return;
+    
+    // Only take the first file
+    const file = files[0];
+    
+    setNewImageFile(file);
+    
+    // Create preview for single image
+    const preview = URL.createObjectURL(file);
+    setNewImagePreview(preview);
+    setError('');
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const removeNewImage = () => {
     setNewImageFile(null);
     setNewImagePreview('');
@@ -155,7 +179,7 @@ export default function EditCategoryPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Category Image <span className="text-red-500">*</span>
           </label>
-          <p className="text-xs text-gray-500 mb-3">Upload a new image to replace the existing one (optional).</p>
+          <p className="text-xs text-gray-500 mb-3">Upload a new image to replace the existing one (optional). Drag & drop or click to browse.</p>
           
           <div className="flex gap-4 mb-4">
             {/* Show new image preview if uploaded, otherwise show existing image */}
@@ -198,20 +222,25 @@ export default function EditCategoryPage() {
             
             {/* Upload new image button */}
             {!newImagePreview && (
-              <label className="flex flex-col items-center justify-center h-32 w-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-xs text-gray-500 mt-2">
-                  {existingImage ? 'Change Image' : 'Add Image'}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-              </label>
+              <div
+                onDrop={handleImageDrop}
+                onDragOver={handleDragOver}
+              >
+                <label className="flex flex-col items-center justify-center h-32 w-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-xs text-gray-500 mt-2">
+                    {existingImage ? 'Change Image' : 'Add Image'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             )}
           </div>
         </div>

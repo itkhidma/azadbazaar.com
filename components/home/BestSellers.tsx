@@ -4,25 +4,39 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getBestSellerProducts } from '@/services/productService';
-import { Product } from '@/types';
+import { getAllCategories } from '@/services/categoryService';
+import { Product, Category } from '@/types';
 
 export default function BestSellers() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadBestSellers();
+    loadData();
   }, []);
 
-  const loadBestSellers = async () => {
+  const loadData = async () => {
     try {
-      const data = await getBestSellerProducts(8);
-      setProducts(data);
+      const [productsData, categoriesData] = await Promise.all([
+        getBestSellerProducts(8),
+        getAllCategories()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Error loading best sellers:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCategoryName = (categoryId: string | Category): string => {
+    if (typeof categoryId === 'object' && categoryId.name) {
+      return categoryId.name;
+    }
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Unknown';
   };
 
   if (loading) {
@@ -113,7 +127,7 @@ export default function BestSellers() {
                 
                 {/* Category */}
                 <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2 truncate">
-                  {typeof product.category === 'string' ? product.category : product.category.name}
+                  {getCategoryName(product.category)}
                 </p>
 
                 {/* Price */}
@@ -122,9 +136,6 @@ export default function BestSellers() {
                     <span className="text-sm md:text-lg lg:text-xl font-bold text-purple-600">
                       ₹{product.price}
                     </span>
-                    {product.weight && (
-                      <span className="text-[10px] md:text-xs text-gray-500 ml-0.5 md:ml-1">/ {product.weight}</span>
-                    )}
                   </div>
                   
                   {/* Add to Cart Button */}

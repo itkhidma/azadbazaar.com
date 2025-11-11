@@ -49,7 +49,7 @@ export default function LoginPage() {
           Welcome Back!
         </h1>
         <p className="text-gray-600">
-          Login to continue shopping for delicious jams
+          Login to continue shopping for high-quality products at Azad Bazaar.
         </p>
       </div>
 

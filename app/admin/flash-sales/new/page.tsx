@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getAllProducts } from '@/services/productService';
 import { addFlashSale } from '@/services/flashSaleService';
+import { getAllCategories } from '@/services/categoryService';
 import { Product } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,6 +14,7 @@ export default function AddFlashSalePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [error, setError] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -28,7 +30,25 @@ export default function AddFlashSalePage() {
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await getAllCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const getCategoryName = (category: string | any) => {
+    if (typeof category === 'string') {
+      const cat = categories.find((c) => c.id === category);
+      return cat?.name || 'Unknown';
+    }
+    return category?.name || 'Unknown';
+  };
 
   const loadProducts = async () => {
     try {
@@ -192,7 +212,7 @@ export default function AddFlashSalePage() {
                 <div className="space-y-1 text-sm text-gray-700">
                   <p><span className="font-semibold">Original Price:</span> ₹{selectedProduct.price}</p>
                   <p><span className="font-semibold">Available Stock:</span> {selectedProduct.stock} units</p>
-                  <p><span className="font-semibold">Category:</span> {typeof selectedProduct.category === 'string' ? selectedProduct.category : selectedProduct.category.name}</p>
+                  <p><span className="font-semibold">Category:</span> {getCategoryName(selectedProduct.category)}</p>
                 </div>
               </div>
             </div>

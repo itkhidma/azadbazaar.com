@@ -8,8 +8,8 @@ import Footer from '@/components/layout/Footer';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Azad Bazaar - Delicious Homemade Jams',
-  description: 'Shop premium quality homemade jams',
+  title: 'Azad Bazaar - Premium Quality Products',
+  description: 'Shop premium quality products at Azad Bazaar. Discover a wide range of items to suit your needs.',
 };
 
 export default function RootLayout({

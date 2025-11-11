@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getProductById } from '@/services/productService';
+import { getCategoryById } from '@/services/categoryService';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product } from '@/types';
@@ -18,6 +19,7 @@ export default function ProductDetailsPage() {
   const productId = params.id as string;
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [categoryName, setCategoryName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -31,6 +33,23 @@ export default function ProductDetailsPage() {
     try {
       const data = await getProductById(productId);
       setProduct(data);
+      
+      // Fetch category name if category is an ID
+      if (data && data.category) {
+        if (typeof data.category === 'string') {
+          // Category is an ID, fetch the category name
+          try {
+            const category = await getCategoryById(data.category);
+            setCategoryName(category?.name || 'Unknown');
+          } catch (error) {
+            console.error('Error loading category:', error);
+            setCategoryName('Unknown');
+          }
+        } else {
+          // Category is already an object
+          setCategoryName(data.category.name || 'Unknown');
+        }
+      }
     } catch (error) {
       console.error('Error loading product:', error);
     } finally {
@@ -69,10 +88,6 @@ export default function ProductDetailsPage() {
 
     await handleAddToCart();
     router.push('/shop/cart');
-  };
-
-  const getCategoryName = (category: any): string => {
-    return typeof category === 'string' ? category : category?.name || 'Unknown';
   };
 
   if (loading) {
@@ -177,7 +192,7 @@ export default function ProductDetailsPage() {
         <div>
           {/* Category */}
           <p className="text-sm text-purple-600 font-medium mb-2">
-            {getCategoryName(product.category)}
+            {categoryName || 'Loading...'}
           </p>
 
           {/* Product Name */}
@@ -185,16 +200,11 @@ export default function ProductDetailsPage() {
             {product.name}
           </h1>
 
-          {/* Price & Weight */}
+          {/* Price */}
           <div className="flex items-baseline gap-3 mb-4 sm:mb-6">
             <span className="text-3xl sm:text-4xl font-bold text-purple-600">
               ₹{product.price}
             </span>
-            {product.weight && (
-              <span className="text-gray-600 text-sm sm:text-base">
-                / {product.weight}
-              </span>
-            )}
           </div>
 
           {/* Stock Status */}
@@ -217,28 +227,24 @@ export default function ProductDetailsPage() {
           {/* Description */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-            <p className="text-gray-700 leading-relaxed">{product.description}</p>
+            <div 
+              className="prose prose-sm sm:prose lg:prose-lg text-gray-700 max-w-none"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
           </div>
 
-          {/* Ingredients */}
-          {product.ingredients && product.ingredients.length > 0 && (
+          {/* Product Video */}
+          {product.videoUrl && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ingredients</h3>
-              <p className="text-gray-700">{product.ingredients.join(', ')}</p>
-            </div>
-          )}
-
-          {/* Expiry Date */}
-          {product.expiryDate && (
-            <div className="mb-6">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Best Before:</span>{' '}
-                {new Date(product.expiryDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Product Video</h3>
+              <video
+                src={product.videoUrl}
+                controls
+                className="w-full rounded-lg border border-gray-200"
+                style={{ maxHeight: '400px' }}
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           )}
 
