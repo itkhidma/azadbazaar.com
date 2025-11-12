@@ -49,8 +49,8 @@ export default function CategoryGrid() {
   return (
     <div className="bg-white py-6 border-b border-gray-100">
       <div className="container mx-auto px-4">
-        {/* Horizontal Scrollable Category Row */}
-        <div className="flex gap-4 md:gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-2">
+        {/* Centered Category Grid */}
+        <div className="flex gap-4 md:gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-2 justify-center">
           {categories.map((category) => (
             <Link
               key={category.id}
@@ -58,7 +58,7 @@ export default function CategoryGrid() {
               className="group flex flex-col items-center flex-shrink-0"
             >
               {/* Circular Category Image */}
-              <div className="relative w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-full overflow-hidden bg-gray-100 shadow-md hover:shadow-lg transition-all duration-300">
+              <div className="relative w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 hover:border-purple-500 transition-all duration-300">
                 {category.imageUrl ? (
                   <Image
                     src={category.imageUrl}

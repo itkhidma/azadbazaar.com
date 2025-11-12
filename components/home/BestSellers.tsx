@@ -6,11 +6,17 @@ import Image from 'next/image';
 import { getBestSellerProducts } from '@/services/productService';
 import { getAllCategories } from '@/services/categoryService';
 import { Product, Category } from '@/types';
+import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function BestSellers() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     loadData();
@@ -37,6 +43,24 @@ export default function BestSellers() {
     }
     const category = categories.find(cat => cat.id === categoryId);
     return category?.name || 'Unknown';
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    try {
+      await addToCart(productId, 1);
+      // You could add a toast notification here
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      // You could add an error notification here
+    }
   };
 
   if (loading) {
@@ -84,13 +108,12 @@ export default function BestSellers() {
       {/* Products Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
         {products.map((product) => (
-          <Link
+          <div
             key={product.id}
-            href={`/shop/products/${product.id}`}
-            className="group"
+            className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-purple-200"
           >
-            <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-purple-200">
-              {/* Product Image */}
+            {/* Product Image - Clickable */}
+            <Link href={`/shop/products/${product.id}`} className="block">
               <div className="relative aspect-square bg-gray-100 overflow-hidden">
                 <Image
                   src={product.imageUrls[0]}
@@ -118,46 +141,56 @@ export default function BestSellers() {
                   )}
                 </div>
               </div>
+            </Link>
 
-              {/* Product Info */}
-              <div className="p-2 md:p-3 lg:p-4">
-                <h3 className="font-semibold text-xs md:text-sm lg:text-base text-gray-900 mb-1 line-clamp-2 group-hover:text-purple-600 transition">
+            {/* Product Info */}
+            <div className="p-2 md:p-3 lg:p-4">
+              <Link href={`/shop/products/${product.id}`}>
+                <h3 className="font-semibold text-xs md:text-sm lg:text-base text-gray-900 mb-1 truncate group-hover:text-purple-600 transition">
                   {product.name}
                 </h3>
-                
-                {/* Category */}
-                <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2 truncate">
-                  {getCategoryName(product.category)}
-                </p>
+              </Link>
+              
+              {/* Category */}
+              <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2 truncate">
+                {getCategoryName(product.category)}
+              </p>
 
-                {/* Price */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm md:text-lg lg:text-xl font-bold text-purple-600">
-                      ₹{product.price}
-                    </span>
-                  </div>
-                  
-                  {/* Add to Cart Button */}
-                  <button className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 md:p-2 rounded-lg transition shadow-md">
-                    <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
+              {/* Price */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm md:text-lg lg:text-xl font-bold text-purple-600">
+                    ₹{product.price}
+                  </span>
                 </div>
-
-                {/* Sales Count */}
-                {product.salesCount && product.salesCount > 0 && (
-                  <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-gray-500 flex items-center gap-1">
-                    <svg className="w-2.5 h-2.5 md:w-3 md:h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                    </svg>
-                    {product.salesCount} sold
-                  </div>
-                )}
+                
+                {/* Add to Cart Button */}
+                <button 
+                  onClick={(e) => handleAddToCart(e, product.id)}
+                  disabled={product.stock === 0}
+                  className={`${
+                    product.stock === 0 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-purple-600 hover:bg-purple-700'
+                  } text-white p-1.5 md:p-2 rounded-lg transition shadow-md`}
+                >
+                  <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
               </div>
+
+              {/* Sales Count */}
+              {product.salesCount && product.salesCount > 0 && (
+                <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-gray-500 flex items-center gap-1">
+                  <svg className="w-2.5 h-2.5 md:w-3 md:h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                  </svg>
+                  {product.salesCount} sold
+                </div>
+              )}
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 

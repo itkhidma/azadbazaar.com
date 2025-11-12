@@ -5,11 +5,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getActiveFlashSales, getRemainingStock, getTimeRemaining } from '@/services/flashSaleService';
 import { FlashSale } from '@/types';
+import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function FlashSales() {
   const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<{ [key: string]: string }>({});
+  const { addToCart } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     loadFlashSales();
@@ -81,6 +87,24 @@ export default function FlashSales() {
     }
   };
 
+  const handleAddToCart = async (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    try {
+      await addToCart(productId, 1);
+      // You could add a toast notification here
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      // You could add an error notification here
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -124,18 +148,17 @@ export default function FlashSales() {
           const isLowStock = stockPercentage < 30;
           
           return (
-            <Link 
-              key={sale.id} 
-              href={`/shop/products/${sale.productId}`}
-              className="group"
+            <div 
+              key={sale.id}
+              className="group bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden relative"
             >
-              <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden relative">
-                {/* Discount Badge */}
-                <div className="absolute top-1.5 md:top-2 left-1.5 md:left-2 z-10 bg-gradient-to-r from-purple-200 to-violet-200 text-purple-600 rounded text-xs font-bold px-2 md:px-3 py-0.5 md:py-1">
-                  -{sale.discountPercentage}%
-                </div>
+              {/* Discount Badge */}
+              <div className="absolute top-1.5 md:top-2 left-1.5 md:left-2 z-10 bg-gradient-to-r from-purple-200 to-violet-200 text-purple-600 rounded text-xs font-bold px-2 md:px-3 py-0.5 md:py-1">
+                -{sale.discountPercentage}%
+              </div>
 
-                {/* Product Image */}
+              {/* Product Image - Clickable */}
+              <Link href={`/shop/products/${sale.productId}`} className="block">
                 <div className="relative aspect-square bg-gray-100 overflow-hidden">
                   <Image
                     src={sale.productImage}
@@ -151,40 +174,59 @@ export default function FlashSales() {
                     </div>
                   )}
                 </div>
+              </Link>
 
-                {/* Product Details */}
-                <div className="p-2 md:p-3 lg:p-4">
-                  <h3 className="font-semibold text-xs md:text-sm lg:text-base text-gray-900 mb-1 md:mb-2 line-clamp-2 transition">
+              {/* Product Details */}
+              <div className="p-2 md:p-3 lg:p-4">
+                <Link href={`/shop/products/${sale.productId}`}>
+                  <h3 className="font-semibold text-xs md:text-sm lg:text-base text-gray-900 mb-1 md:mb-2 truncate transition hover:text-purple-600">
                     {sale.productName}
                   </h3>
+                </Link>
 
-                  {/* Price Section */}
-                  <div className="mb-2 md:mb-3">
-                    <div className="flex items-center gap-1 md:gap-2 mb-0.5 md:mb-1">
-                      <span className="text-base md:text-lg lg:text-xl font-bold text-purple-600">
-                        ₹{sale.salePrice}
-                      </span>
-                      <span className="text-[10px] md:text-xs text-gray-500 line-through">
-                        ₹{sale.originalPrice}
-                      </span>
-                    </div>
+                {/* Price Section */}
+                <div className="mb-2 md:mb-3">
+                  <div className="flex items-center gap-1 md:gap-2 mb-0.5 md:mb-1">
+                    <span className="text-base md:text-lg lg:text-xl font-bold text-purple-600">
+                      ₹{sale.salePrice}
+                    </span>
+                    <span className="text-[10px] md:text-xs text-gray-500 line-through">
+                      ₹{sale.originalPrice}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <div className="text-[10px] md:text-xs text-green-600 font-semibold">
                       Save ₹{sale.originalPrice - sale.salePrice}
                     </div>
-                  </div>
-
-                  <hr className="my-2" />
-
-                  {/* Countdown Timer */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
-                    <span className="text-[10px] md:text-xs text-gray-600">Ends in: </span>
-                    <span className="text-[10px] md:text-xs text-red-600 font-semibold">
-                      {timeLeft[sale.id] || 'Loading...'}
-                    </span>
+                    
+                    {/* Add to Cart Button */}
+                    <button 
+                      onClick={(e) => handleAddToCart(e, sale.productId)}
+                      disabled={remainingStock === 0}
+                      className={`${
+                        remainingStock === 0 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-purple-600 hover:bg-purple-700'
+                      } text-white p-1.5 md:p-2 rounded-lg transition shadow-md`}
+                    >
+                      <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
+
+                <hr className="my-2" />
+
+                {/* Countdown Timer */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
+                  <span className="text-[10px] md:text-xs text-gray-600">Ends in: </span>
+                  <span className="text-[10px] md:text-xs text-red-600 font-semibold">
+                    {timeLeft[sale.id] || 'Loading...'}
+                  </span>
+                </div>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>
