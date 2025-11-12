@@ -56,10 +56,9 @@ export default function BestSellers() {
 
     try {
       await addToCart(productId, 1);
-      // You could add a toast notification here
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      // You could add an error notification here
+      alert('Added to cart!');
+    } catch (error: any) {
+      alert(error.message || 'Failed to add to cart');
     }
   };
 

@@ -14,6 +14,7 @@ import {
 import { db } from '@/lib/firebase';
 import { Order, Address } from '@/types';
 import { clearCart } from '@/services/cartService';
+import { isUserBlocked } from '@/services/customerService';
 
 const ordersCollection = collection(db, 'orders');
 
@@ -25,6 +26,12 @@ export const createOrder = async (
   shippingAddress: Address
 ): Promise<string> => {
   try {
+    // Check if user is blocked
+    const blocked = await isUserBlocked(userId);
+    if (blocked) {
+      throw new Error('Your account has been blocked. You cannot place orders.');
+    }
+
     const orderData = {
       userId,
       items,

@@ -1,7 +1,9 @@
 import { 
   collection, 
   query, 
-  getDocs, 
+  getDocs,
+  getDoc,
+  doc,
   where,
   orderBy,
   limit,
@@ -127,16 +129,39 @@ export const getRecentOrders = async (limitCount: number = 5): Promise<RecentOrd
     
     const snapshot = await getDocs(q);
     
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        customerName: data.customerName || 'Guest',
-        amount: data.totalAmount || 0,
-        status: data.orderStatus || 'processing',
-        date: (data.createdAt as Timestamp).toDate(),
-      };
-    });
+    // Fetch user names for each order
+    const ordersWithNames = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        let customerName = 'Guest';
+        
+        // Fetch user name from users collection
+        if (data.userId) {
+          try {
+            const userDoc = await getDocs(
+              query(collection(db, 'users'), where('uid', '==', data.userId), limit(1))
+            );
+            
+            if (!userDoc.empty) {
+              const userData = userDoc.docs[0].data();
+              customerName = userData.displayName || userData.email || 'Guest';
+            }
+          } catch (error) {
+            console.error('Error fetching user name:', error);
+          }
+        }
+        
+        return {
+          id: doc.id,
+          customerName,
+          amount: data.totalAmount || 0,
+          status: data.orderStatus || 'processing',
+          date: (data.createdAt as Timestamp).toDate(),
+        };
+      })
+    );
+    
+    return ordersWithNames;
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -145,25 +170,66 @@ export const getRecentOrders = async (limitCount: number = 5): Promise<RecentOrd
 // Get top selling products
 export const getTopProducts = async (limitCount: number = 5): Promise<TopProduct[]> => {
   try {
-    // Note: This is a simplified version
-    // For production, you'd want to track sales count in a separate field
-    const q = query(
-      collection(db, 'products'),
-      orderBy('stock', 'desc'),
-      limit(limitCount)
+    // Get all orders to calculate product sales
+    const ordersQuery = query(collection(db, 'orders'));
+    const ordersSnapshot = await getDocs(ordersQuery);
+    
+    // Map to track product sales: productId -> { sales count, revenue }
+    const productSalesMap = new Map<string, { sales: number; revenue: number }>();
+    
+    ordersSnapshot.forEach((doc) => {
+      const order = doc.data();
+      const items = order.items || [];
+      
+      items.forEach((item: any) => {
+        const productId = item.productId || item.id;
+        const quantity = item.quantity || 0;
+        // Get price from item or from nested product object
+        const price = item.price || item.product?.price || 0;
+        const revenue = quantity * price;
+        
+        if (productSalesMap.has(productId)) {
+          const existing = productSalesMap.get(productId)!;
+          existing.sales += quantity;
+          existing.revenue += revenue;
+        } else {
+          productSalesMap.set(productId, {
+            sales: quantity,
+            revenue: revenue,
+          });
+        }
+      });
+    });
+    
+    // Convert map to array and sort by sales count
+    const sortedProductIds = Array.from(productSalesMap.entries())
+      .sort((a, b) => b[1].sales - a[1].sales)
+      .slice(0, limitCount);
+    
+    // Fetch product names from products collection
+    const productsWithNames = await Promise.all(
+      sortedProductIds.map(async ([productId, data]) => {
+        let productName = 'Unknown Product';
+        
+        try {
+          const productDoc = await getDoc(doc(db, 'products', productId));
+          if (productDoc.exists()) {
+            productName = productDoc.data().name || 'Unknown Product';
+          }
+        } catch (error) {
+          console.error('Error fetching product name:', error);
+        }
+        
+        return {
+          id: productId,
+          name: productName,
+          sales: data.sales,
+          revenue: Math.round(data.revenue),
+        };
+      })
     );
     
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name,
-        sales: 100 - (data.stock || 0), // Simplified calculation
-        revenue: (100 - (data.stock || 0)) * data.price,
-      };
-    });
+    return productsWithNames;
   } catch (error: any) {
     throw new Error(error.message);
   }

@@ -37,6 +37,17 @@ export const getCart = async (userId: string): Promise<Cart> => {
       updatedAt: new Date(),
     };
   } catch (error: any) {
+    // If user is blocked or has permission issues, return empty cart
+    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+      console.warn('User blocked or permission denied, returning empty cart');
+      return {
+        userId,
+        items: [],
+        totalAmount: 0,
+        totalItems: 0,
+        updatedAt: new Date(),
+      };
+    }
     throw new Error(error.message);
   }
 };
@@ -93,6 +104,10 @@ export const addToCart = async (
       updatedAt: serverTimestamp(),
     });
   } catch (error: any) {
+    // If user is blocked, show appropriate message
+    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+      throw new Error('Your account has been blocked. You cannot add items to cart.');
+    }
     throw new Error(error.message);
   }
 };
@@ -132,6 +147,10 @@ export const updateCartItemQuantity = async (
       updatedAt: serverTimestamp(),
     });
   } catch (error: any) {
+    // If user is blocked, show appropriate message
+    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+      throw new Error('Your account has been blocked. You cannot update cart.');
+    }
     throw new Error(error.message);
   }
 };
@@ -165,6 +184,11 @@ export const removeFromCart = async (
       updatedAt: serverTimestamp(),
     });
   } catch (error: any) {
+    // If user is blocked, silently fail or show message
+    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+      console.warn('User blocked, cannot remove from cart');
+      return;
+    }
     throw new Error(error.message);
   }
 };

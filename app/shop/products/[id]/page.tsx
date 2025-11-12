@@ -70,9 +70,9 @@ export default function ProductDetailsPage() {
       await addToCart(product.id, quantity);
       // Show success message or redirect to cart
       alert('Added to cart!');
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('Failed to add to cart');
+    } catch (error: any) {
+      // Show user-friendly error message
+      alert(error.message || 'Failed to add to cart');
     } finally {
       setAddingToCart(false);
     }

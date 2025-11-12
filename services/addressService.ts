@@ -162,6 +162,11 @@ export const getUserAddresses = async (userId: string): Promise<UserAddress[]> =
       return b.createdAt.getTime() - a.createdAt.getTime();
     });
   } catch (error: any) {
+    // If user is blocked or has permission issues, return empty array
+    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+      console.warn('User blocked or permission denied, returning empty addresses');
+      return [];
+    }
     throw new Error(error.message);
   }
 };

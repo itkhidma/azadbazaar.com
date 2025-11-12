@@ -53,7 +53,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userCart = await getCart(user.uid);
       setCart(userCart);
     } catch (error) {
-      console.error('Error fetching cart:', error);
+      // Silently handle - getCart already returns empty cart for blocked users
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await addToCartService(user.uid, productId, quantity);
       await fetchCart();
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      // Re-throw for UI to handle
       throw error;
     } finally {
       setLoading(false);
@@ -82,7 +82,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateQuantityService(user.uid, productId, quantity);
       await fetchCart();
     } catch (error) {
-      console.error('Error updating quantity:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -97,7 +96,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await removeFromCartService(user.uid, productId);
       await fetchCart();
     } catch (error) {
-      console.error('Error removing item:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -112,7 +110,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await clearCartService(user.uid);
       await fetchCart();
     } catch (error) {
-      console.error('Error clearing cart:', error);
       throw error;
     } finally {
       setLoading(false);
