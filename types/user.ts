@@ -10,7 +10,9 @@ export interface User {
 
 export interface UserProfile extends User {
   phoneNumber?: string;
-  address?: Address;
+  address?: Address; // Legacy - kept for backward compatibility
+  addresses?: UserAddress[]; // New: Multiple addresses support
+  defaultAddressId?: string; // Quick reference to default address
 }
 
 export interface Address {
@@ -21,4 +23,21 @@ export interface Address {
   state: string;
   zipCode: string;
   country: string;
+}
+
+export interface UserAddress {
+  id: string;
+  label: string; // "Home", "Office", "Parents House", etc.
+  isDefault: boolean;
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  createdAt: Date;
+  lastUsedAt?: Date; // Track when last used for smart sorting
 }
