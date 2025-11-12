@@ -11,6 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAdmin(user)) {
@@ -56,22 +57,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 z-50 h-full bg-white shadow-lg transform transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b">
-            <Link href="/admin" className="text-xl font-bold text-purple-600">
-              Admin Panel
-            </Link>
+            {!sidebarCollapsed && (
+              <Link href="/admin" className="text-xl font-bold text-purple-600">
+                Admin Panel
+              </Link>
+            )}
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-gray-500 hover:text-gray-700"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* Desktop Collapse Button */}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden lg:block text-gray-500 hover:text-gray-700 transition"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <svg className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
               </svg>
             </button>
           </div>
@@ -88,11 +103,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     isActive
                       ? 'bg-purple-50 text-purple-600 font-semibold'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  } ${sidebarCollapsed ? 'justify-center' : ''}`}
                   onClick={() => setSidebarOpen(false)}
+                  title={sidebarCollapsed ? item.name : ''}
                 >
                   <span className="text-2xl">{item.icon}</span>
-                  <span>{item.name}</span>
+                  {!sidebarCollapsed && <span>{item.name}</span>}
                 </Link>
               );
             })}
@@ -100,31 +116,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* User Info */}
           <div className="p-4 border-t">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <span className="text-purple-600 font-semibold">
-                  {user?.displayName?.charAt(0) || 'A'}
-                </span>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <span className="text-purple-600 font-semibold">
+                      {user?.displayName?.charAt(0) || 'A'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {user?.displayName}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  </div>
+                </div>
+                <Link
+                  href="/"
+                  className="block w-full text-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                >
+                  Back to Store
+                </Link>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                  <span className="text-purple-600 font-semibold">
+                    {user?.displayName?.charAt(0) || 'A'}
+                  </span>
+                </div>
+                <Link
+                  href="/"
+                  className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  title="Back to Store"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </Link>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate">
-                  {user?.displayName}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-              </div>
-            </div>
-            <Link
-              href="/"
-              className="block w-full text-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
-            >
-              Back to Store
-            </Link>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         {/* Top Bar */}
         <header className="bg-white shadow-sm sticky top-0 z-30">
           <div className="flex items-center justify-between px-6 py-4">

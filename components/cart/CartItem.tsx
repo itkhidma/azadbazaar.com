@@ -63,9 +63,10 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, loading }: 
                 {product.name}
               </h3>
             </Link>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-              {product.description}
-            </p>
+            <div 
+              className="text-sm text-gray-600 mt-1 line-clamp-2 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
             
             {/* Category Badge */}
             <div className="flex items-center gap-2 mt-2">
