@@ -17,6 +17,7 @@ export default function Header() {
   const { cart } = useCart();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Category');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -138,7 +139,11 @@ export default function Header() {
 
             {/* Account Icon - Show only when logged in */}
             {!loading && user ? (
-              <div className="relative group">
+              <div 
+                className="relative"
+                onMouseEnter={() => setProfileMenuOpen(true)}
+                onMouseLeave={() => setProfileMenuOpen(false)}
+              >
                 <button className="p-2 hover:bg-gray-100 rounded-full transition">
                   {user.photoURL ? (
                     <div className="w-8 h-8 rounded-full overflow-hidden">
@@ -163,7 +168,8 @@ export default function Header() {
                 </button>
 
                 {/* Dropdown Menu */}
-                <div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                <div className={`${profileMenuOpen ? 'block' : 'hidden'} absolute right-0 top-full pt-2 w-48`}>
+                  <div className="bg-white rounded-lg shadow-lg border border-gray-200 py-2">
                   <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-3">
                     {user.photoURL ? (
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
@@ -222,6 +228,7 @@ export default function Header() {
                   >
                     Logout
                   </button>
+                  </div>
                 </div>
               </div>
             ) : (

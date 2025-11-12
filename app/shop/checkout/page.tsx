@@ -50,6 +50,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [checkingBlockStatus, setCheckingBlockStatus] = useState(true);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderId, setOrderId] = useState<string>('');
+  const [orderAmount, setOrderAmount] = useState(0);
+  const [orderItemsCount, setOrderItemsCount] = useState(0);
 
   // Saved addresses
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
@@ -276,8 +280,12 @@ export default function CheckoutPage() {
         country: selectedAddress.country,
       };
 
+      // Save order details before clearing cart
+      setOrderAmount(cart.totalAmount);
+      setOrderItemsCount(cart.totalItems);
+
       // Create the order
-      const orderId = await createOrder(
+      const newOrderId = await createOrder(
         user.uid,
         cart.items,
         cart.totalAmount,
@@ -291,8 +299,9 @@ export default function CheckoutPage() {
       // Refresh cart context to update UI
       await refreshCart();
       
-      alert(`Order placed successfully! Order ID: ${orderId}`);
-      router.push('/shop/orders');
+      // Show success screen
+      setOrderId(newOrderId);
+      setOrderSuccess(true);
     } catch (error) {
       console.error('Error placing order:', error);
       alert('Failed to place order. Please try again.');
@@ -314,6 +323,106 @@ export default function CheckoutPage() {
 
   if (!user || !cart) {
     return null;
+  }
+
+  // Show order success screen
+  if (orderSuccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Success Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+              <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Order Confirmed
+            </h1>
+            <p className="text-gray-600">
+              Thank you for your purchase!
+            </p>
+          </div>
+
+          {/* Order Details Card */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            {/* Order ID */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <p className="text-sm text-gray-500 mb-1">Order ID</p>
+              <p className="text-lg font-mono font-semibold text-gray-900 break-all">
+                {orderId}
+              </p>
+            </div>
+
+            {/* Order Summary */}
+            <div className="space-y-4 mb-6 pb-6 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">Order Summary</h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Total Amount</span>
+                  <span className="font-semibold text-gray-900">
+                    ₹{orderAmount.toLocaleString()}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Total Items</span>
+                  <span className="font-semibold text-gray-900">
+                    {orderItemsCount} item{orderItemsCount > 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Delivery Address */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Delivery Address</h3>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p className="font-medium text-gray-900">{selectedAddress?.fullName}</p>
+                <p>{selectedAddress?.addressLine1}</p>
+                {selectedAddress?.addressLine2 && <p>{selectedAddress.addressLine2}</p>}
+                <p>{selectedAddress?.city}, {selectedAddress?.state} - {selectedAddress?.pincode}</p>
+                <p className="text-gray-500">{selectedAddress?.phone}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push('/shop/products')}
+              className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+            >
+              Continue Shopping
+            </button>
+            
+            <button
+              onClick={() => router.push('/shop/orders')}
+              className="w-full px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            >
+              View All Orders
+            </button>
+            
+            <button
+              onClick={() => router.push('/')}
+              className="w-full px-6 py-3 bg-white text-gray-600 rounded-lg hover:bg-gray-50 transition"
+            >
+              Back to Home
+            </button>
+          </div>
+
+          {/* Email Notice */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              📧 Order confirmation sent to your email
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Show blocked message

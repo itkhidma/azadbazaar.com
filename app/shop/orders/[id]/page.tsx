@@ -311,9 +311,7 @@ export default function OrderDetailsPage() {
         {/* Action Buttons */}
         {(order.orderStatus === 'processing' || order.orderStatus === 'shipped') && (
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <button className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition">
-              Track Order
-            </button>
+           
             <button className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-gray-400 transition">
               Need Help?
             </button>
