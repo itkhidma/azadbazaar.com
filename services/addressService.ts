@@ -135,6 +135,37 @@ export const markAddressAsUsed = async (
   }
 };
 
+// Set an address as default
+export const setDefaultAddress = async (
+  userId: string,
+  addressId: string
+): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data();
+    const addresses = (userData.addresses || []) as UserAddress[];
+    
+    // Update all addresses: set selected as default, others as not default
+    const updatedAddresses = addresses.map((addr) => ({
+      ...addr,
+      isDefault: addr.id === addressId,
+    }));
+
+    await updateDoc(userRef, {
+      addresses: updatedAddresses,
+      defaultAddressId: addressId,
+    });
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
 // Get all user addresses sorted by priority
 export const getUserAddresses = async (userId: string): Promise<UserAddress[]> => {
   try {
