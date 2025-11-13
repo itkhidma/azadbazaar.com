@@ -145,10 +145,10 @@ export const addFlashSale = async (flashSaleData: Omit<FlashSale, 'id' | 'create
     const productRef = doc(db, 'products', flashSaleData.productId);
     await updateDoc(productRef, {
       isOnFlashSale: true,
-      originalPrice: flashSaleData.originalPrice,
-      price: flashSaleData.salePrice,
+      originalPrice: Math.round(flashSaleData.originalPrice * 100) / 100,
+      price: Math.round(flashSaleData.salePrice * 100) / 100,
       flashSaleEndDate: Timestamp.fromDate(flashSaleData.endDate),
-      flashSaleDiscountPercentage: flashSaleData.discountPercentage,
+      flashSaleDiscountPercentage: Math.round(flashSaleData.discountPercentage),
       flashSaleSoldCount: 0,
       flashSaleStockLimit: flashSaleData.stockLimit,
       updatedAt: serverTimestamp(),
@@ -193,10 +193,10 @@ export const updateFlashSale = async (
     };
     
     if (flashSaleData.salePrice !== undefined) {
-      productUpdateData.price = flashSaleData.salePrice;
+      productUpdateData.price = Math.round(flashSaleData.salePrice * 100) / 100;
     }
     if (flashSaleData.originalPrice !== undefined) {
-      productUpdateData.originalPrice = flashSaleData.originalPrice;
+      productUpdateData.originalPrice = Math.round(flashSaleData.originalPrice * 100) / 100;
     }
     if (flashSaleData.endDate !== undefined) {
       productUpdateData.flashSaleEndDate = Timestamp.fromDate(flashSaleData.endDate);

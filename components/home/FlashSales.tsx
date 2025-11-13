@@ -217,9 +217,9 @@ export default function FlashSales() {
                   </div>
                   <div className="flex items-center justify-between">
                     {product.originalPrice && (
-                      <div className="text-[10px] md:text-xs text-green-600 font-semibold">
-                        Save ₹{product.originalPrice - product.price}
-                      </div>
+                    <div className="text-[10px] md:text-xs text-green-600 font-semibold">
+                      Save ₹{Math.round((product.originalPrice - product.price) * 100) / 100}
+                    </div>
                     )}
                     
                     {/* Add to Cart Button */}

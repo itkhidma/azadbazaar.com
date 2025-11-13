@@ -52,6 +52,36 @@ export const getCart = async (userId: string): Promise<Cart> => {
   }
 };
 
+// Helper function to clean product data (remove undefined values)
+const cleanProductForCart = (product: Product): any => {
+  const cleaned: any = {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    cost: product.cost,
+    imageUrls: product.imageUrls,
+    category: product.category,
+    stock: product.stock,
+    createdBy: product.createdBy,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+  };
+
+  // Only add optional fields if they have actual values (not undefined)
+  if (product.videoUrl) cleaned.videoUrl = product.videoUrl;
+  if (product.originalPrice) cleaned.originalPrice = product.originalPrice;
+  if (product.isOnFlashSale !== undefined) cleaned.isOnFlashSale = product.isOnFlashSale;
+  if (product.flashSaleEndDate) cleaned.flashSaleEndDate = product.flashSaleEndDate;
+  if (product.flashSaleDiscountPercentage) cleaned.flashSaleDiscountPercentage = product.flashSaleDiscountPercentage;
+  if (product.flashSaleSoldCount !== undefined) cleaned.flashSaleSoldCount = product.flashSaleSoldCount;
+  if (product.flashSaleStockLimit) cleaned.flashSaleStockLimit = product.flashSaleStockLimit;
+  if (product.salesCount !== undefined) cleaned.salesCount = product.salesCount;
+  if (product.isFeatured !== undefined) cleaned.isFeatured = product.isFeatured;
+
+  return cleaned;
+};
+
 // Add item to cart
 export const addToCart = async (
   userId: string,
@@ -74,13 +104,13 @@ export const addToCart = async (
       updatedItems = [...cart.items];
       updatedItems[existingItemIndex].quantity += quantity;
     } else {
-      // Add new item
+      // Add new item - clean product data to remove undefined values
       updatedItems = [
         ...cart.items,
         {
           productId,
           quantity,
-          product,
+          product: cleanProductForCart(product),
         },
       ];
     }

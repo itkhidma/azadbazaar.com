@@ -11,9 +11,11 @@ export default function CartPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        router.push('/auth/login?redirect=/shop/checkout');
+        // Use replace to avoid adding to history
+        router.replace('/auth/login?redirect=/shop/checkout');
       } else {
-        router.push('/shop/checkout');
+        // Use replace to avoid adding to history
+        router.replace('/shop/checkout');
       }
     }
   }, [user, authLoading, router]);

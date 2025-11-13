@@ -238,7 +238,7 @@ export default function AddFlashSalePage() {
             />
             {selectedProduct && formData.salePrice && (
               <p className="text-xs text-green-600 mt-2 font-semibold">
-                Discount: {calculateDiscount()}% OFF • Save ₹{(selectedProduct.price - parseFloat(formData.salePrice)).toFixed(2)}
+                Discount: {calculateDiscount()}% OFF • Save ₹{Math.round((selectedProduct.price - parseFloat(formData.salePrice)) * 100) / 100}
               </p>
             )}
           </div>

@@ -62,6 +62,27 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('cod'); // cod, card, upi, netbanking
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      // If on step 1, go to homepage instead of previous page
+      if (currentStep === 1) {
+        router.replace('/');
+      } else {
+        // Go to previous checkout step
+        setCurrentStep(prev => Math.max(1, prev - 1));
+      }
+    };
+
+    // Add state to history to intercept back button
+    window.history.pushState({ checkoutStep: currentStep }, '');
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [currentStep, router]);
+
   // Compute selected address from ID
   const selectedAddress = savedAddresses.find(addr => addr.id === selectedAddressId);
 
@@ -106,7 +127,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login?redirect=/shop/checkout');
+      router.replace('/auth/login?redirect=/shop/checkout');
     }
   }, [user, authLoading, router]);
 

@@ -82,12 +82,21 @@ export default function ProductDetailsPage() {
     if (!product) return;
 
     if (!user) {
-      router.push('/auth/login');
+      // Use replace to avoid history entry for login redirect
+      router.replace('/auth/login?redirect=/shop/checkout');
       return;
     }
 
-    await handleAddToCart();
-    router.push('/shop/cart');
+    // Add to cart first
+    setAddingToCart(true);
+    try {
+      await addToCart(product.id, quantity);
+      // Go directly to checkout, skip cart page
+      router.push('/shop/checkout');
+    } catch (error: any) {
+      alert(error.message || 'Failed to add to cart');
+      setAddingToCart(false);
+    }
   };
 
   if (loading) {
@@ -221,7 +230,7 @@ export default function ProductDetailsPage() {
                 </div>
                 {product.originalPrice && (
                   <p className="text-sm text-green-600 font-semibold">
-                    ⚡ Flash Sale - Save ₹{product.originalPrice - product.price}
+                    ⚡ Flash Sale - Save ₹{Math.round((product.originalPrice - product.price) * 100) / 100}
                   </p>
                 )}
               </div>

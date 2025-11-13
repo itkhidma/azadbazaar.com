@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signUpWithEmail, signInWithGoogle } from '@/services/authService';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
@@ -42,7 +44,8 @@ export default function SignupPage() {
 
     try {
       await signUpWithEmail(formData.email, formData.password, formData.displayName);
-      router.push('/');
+      // Use replace to avoid creating history entry
+      router.replace(redirect || '/');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {
@@ -56,7 +59,8 @@ export default function SignupPage() {
 
     try {
       await signInWithGoogle();
-      router.push('/');
+      // Use replace to avoid creating history entry
+      router.replace(redirect || '/');
     } catch (err: any) {
       setError(err.message || 'Failed to signup with Google');
     } finally {
