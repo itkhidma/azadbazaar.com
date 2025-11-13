@@ -124,7 +124,7 @@ export default function FlashSales() {
   }
 
   return (
-    <div className="container mx-auto px-4 md:px-6 lg:px-24 py-8 md:py-12 bg-gray-100">
+    <div className="container mx-auto px-4 md:px-6 lg:px-24 py-8 md:py-12 bg-white">
       {/* Section Header */}
       <div className="mb-6 md:mb-8">
         <div className="gap-4">

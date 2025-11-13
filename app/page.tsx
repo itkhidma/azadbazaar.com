@@ -7,7 +7,7 @@ import NewArrivals from "@/components/home/NewArrivals";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-purple-50">
+    <div className="min-h-screen bg-white">
       {/* Category Grid Section */}
       <CategoryGrid />
 

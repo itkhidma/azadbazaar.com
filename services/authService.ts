@@ -39,6 +39,7 @@ export const signUpWithEmail = async (
 
     await setDoc(doc(db, 'users', firebaseUser.uid), {
       ...newUser,
+      isBlocked: false,  // Default not blocked
       createdAt: serverTimestamp(),
     });
 
@@ -103,6 +104,7 @@ export const signInWithGoogle = async (): Promise<User> => {
 
       await setDoc(userDocRef, {
         ...newUser,
+        isBlocked: false,  // Default not blocked
         createdAt: serverTimestamp(),
       });
 
