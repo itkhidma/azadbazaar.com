@@ -9,12 +9,14 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  increment
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Order, Address } from '@/types';
 import { clearCart } from '@/services/cartService';
 import { isUserBlocked } from '@/services/customerService';
+import { getProductById } from '@/services/productService';
 
 const ordersCollection = collection(db, 'orders');
 
@@ -44,6 +46,25 @@ export const createOrder = async (
     };
 
     const docRef = await addDoc(ordersCollection, orderData);
+    
+    // Update flash sale sold counts for products on flash sale
+    await Promise.all(
+      items.map(async (item) => {
+        try {
+          const product = await getProductById(item.productId);
+          if (product?.isOnFlashSale) {
+            const productRef = doc(db, 'products', item.productId);
+            await updateDoc(productRef, {
+              flashSaleSoldCount: increment(item.quantity),
+              updatedAt: serverTimestamp(),
+            });
+          }
+        } catch (error) {
+          // Log error but don't fail the order
+          console.error(`Failed to update flash sale count for product ${item.productId}:`, error);
+        }
+      })
+    );
     
     // Clear user's cart after order creation
     await clearCart(userId);

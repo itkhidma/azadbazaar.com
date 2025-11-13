@@ -14,7 +14,7 @@ interface ReviewFormProps {
 
 export default function ReviewForm({ productId, isVerifiedPurchase, onReviewSubmitted, onCancel }: ReviewFormProps) {
   const { user } = useAuth();
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');

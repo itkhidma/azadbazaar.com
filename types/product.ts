@@ -1,11 +1,11 @@
 import { Category } from './category';
-import { FlashSale } from './flashSale';
 
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
+  originalPrice?: number; // Original price before flash sale
   cost: number;
   imageUrls: string[]; // Cloudinary URLs
   videoUrl?: string; // Optional: Cloudinary video URL
@@ -14,7 +14,13 @@ export interface Product {
   createdBy: string; // User ID of the creator
   createdAt: Date;
   updatedAt: Date;
-  flashSale?: FlashSale; // Optional: Active flash sale for this product
+  // Flash sale fields (single source of truth)
+  isOnFlashSale?: boolean;
+  flashSaleEndDate?: Date;
+  flashSaleDiscountPercentage?: number;
+  flashSaleSoldCount?: number;
+  flashSaleStockLimit?: number;
+  // Other fields
   salesCount?: number; // Optional: Track number of sales for best sellers
   isFeatured?: boolean; // Optional: Mark as featured/best seller
 }

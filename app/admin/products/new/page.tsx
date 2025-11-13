@@ -213,7 +213,7 @@ export default function AddProductPage() {
     setError('');
     
     // Validation
-    if (!formData.name || !formData.description || !formData.price || !formData.stock || !formData.category) {
+    if (!formData.name || !formData.description || !formData.price || !formData.category) {
       setError('Please fill in all required fields');
       return;
     }
@@ -248,7 +248,7 @@ export default function AddProductPage() {
         description: formData.description,
         price: parseFloat(formData.price),
         cost: parseFloat(formData.cost) || 0,
-        stock: parseInt(formData.stock),
+        stock: formData.stock ? parseInt(formData.stock) : 1,
         category: formData.category,
         imageUrls,
         createdBy: user?.uid || 'admin', // Set creator user ID
@@ -396,17 +396,16 @@ export default function AddProductPage() {
           {/* Stock */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Stock Quantity <span className="text-red-500">*</span>
+              Stock Quantity
             </label>
             <input
               type="number"
               name="stock"
               value={formData.stock}
               onChange={handleChange}
-              placeholder="100"
+              placeholder="1"
               min="0"
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              required
             />
           </div>
 

@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getActiveFlashSales, getRemainingStock, getTimeRemaining } from '@/services/flashSaleService';
-import { FlashSale } from '@/types';
+import { getFlashSaleProducts } from '@/services/productService';
+import { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function FlashSales() {
-  const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
+  const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<{ [key: string]: string }>({});
   const { addToCart } = useCart();
@@ -23,19 +23,21 @@ export default function FlashSales() {
 
   // Update countdown timers every second
   useEffect(() => {
-    if (flashSales.length === 0) return;
+    if (flashSaleProducts.length === 0) return;
 
     const interval = setInterval(() => {
       const newTimeLeft: { [key: string]: string } = {};
       let hasEndedSale = false;
       
-      flashSales.forEach(sale => {
-        const remaining = getTimeRemaining(sale);
-        newTimeLeft[sale.id] = formatTimeRemaining(remaining);
-        
-        // Check if any sale has ended
-        if (remaining <= 0) {
-          hasEndedSale = true;
+      flashSaleProducts.forEach(product => {
+        if (product.flashSaleEndDate) {
+          const remaining = getTimeRemaining(product.flashSaleEndDate);
+          newTimeLeft[product.id] = formatTimeRemaining(remaining);
+          
+          // Check if any sale has ended
+          if (remaining <= 0) {
+            hasEndedSale = true;
+          }
         }
       });
       
@@ -48,17 +50,19 @@ export default function FlashSales() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [flashSales]);
+  }, [flashSaleProducts]);
 
   const loadFlashSales = async () => {
     try {
-      const sales = await getActiveFlashSales();
-      setFlashSales(sales);
+      const products = await getFlashSaleProducts();
+      setFlashSaleProducts(products);
       
-      // Initialize time left for each sale
+      // Initialize time left for each product
       const initialTimeLeft: { [key: string]: string } = {};
-      sales.forEach(sale => {
-        initialTimeLeft[sale.id] = formatTimeRemaining(getTimeRemaining(sale));
+      products.forEach(product => {
+        if (product.flashSaleEndDate) {
+          initialTimeLeft[product.id] = formatTimeRemaining(getTimeRemaining(product.flashSaleEndDate));
+        }
       });
       setTimeLeft(initialTimeLeft);
     } catch (error) {
@@ -66,6 +70,19 @@ export default function FlashSales() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper: Get time remaining in milliseconds
+  const getTimeRemaining = (endDate: Date): number => {
+    return Math.max(0, endDate.getTime() - new Date().getTime());
+  };
+
+  // Helper: Calculate remaining stock
+  const getRemainingStock = (product: Product): number => {
+    if (!product.flashSaleStockLimit || !product.flashSaleSoldCount) {
+      return product.flashSaleStockLimit || 0;
+    }
+    return Math.max(0, product.flashSaleStockLimit - product.flashSaleSoldCount);
   };
 
   const formatTimeRemaining = (milliseconds: number): string => {
@@ -119,7 +136,7 @@ export default function FlashSales() {
     );
   }
 
-  if (flashSales.length === 0) {
+  if (flashSaleProducts.length === 0) {
     return null; // Don't show section if no active flash sales
   }
 
@@ -141,33 +158,36 @@ export default function FlashSales() {
 
       {/* Flash Sale Products Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-        {flashSales.map((sale) => {
-          const remainingStock = getRemainingStock(sale);
-          const stockPercentage = (remainingStock / sale.stockLimit) * 100;
+        {flashSaleProducts.map((product) => {
+          const remainingStock = getRemainingStock(product);
+          const stockLimit = product.flashSaleStockLimit || 0;
+          const stockPercentage = stockLimit > 0 ? (remainingStock / stockLimit) * 100 : 0;
           const isLowStock = stockPercentage < 30;
           
           return (
             <div 
-              key={sale.id}
+              key={product.id}
               className="group bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden relative"
             >
               {/* Discount Badge */}
-              <div className="absolute top-1.5 md:top-2 left-1.5 md:left-2 z-10 bg-gradient-to-r from-purple-200 to-violet-200 text-purple-600 rounded text-xs font-bold px-2 md:px-3 py-0.5 md:py-1">
-                -{sale.discountPercentage}%
-              </div>
+              {product.flashSaleDiscountPercentage && (
+                <div className="absolute top-1.5 md:top-2 left-1.5 md:left-2 z-10 bg-gradient-to-r from-purple-200 to-violet-200 text-purple-600 rounded text-xs font-bold px-2 md:px-3 py-0.5 md:py-1">
+                  -{product.flashSaleDiscountPercentage}%
+                </div>
+              )}
 
               {/* Product Image - Clickable */}
-              <Link href={`/shop/products/${sale.productId}`} className="block">
+              <Link href={`/shop/products/${product.id}`} className="block">
                 <div className="relative aspect-square bg-gray-100 overflow-hidden">
                   <Image
-                    src={sale.productImage}
-                    alt={sale.productName}
+                    src={product.imageUrls[0] || '/placeholder.jpg'}
+                    alt={product.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   
                   {/* Low Stock Warning */}
-                  {isLowStock && (
+                  {isLowStock && remainingStock > 0 && (
                     <div className="absolute bottom-0 left-0 right-0 bg-red-600 text-white text-xs py-1 text-center font-semibold">
                       Only {remainingStock} left!
                     </div>
@@ -177,9 +197,9 @@ export default function FlashSales() {
 
               {/* Product Details */}
               <div className="p-2 md:p-3 lg:p-4">
-                <Link href={`/shop/products/${sale.productId}`}>
+                <Link href={`/shop/products/${product.id}`}>
                   <h3 className="font-semibold text-xs md:text-sm lg:text-base text-gray-900 mb-1 md:mb-2 truncate transition hover:text-purple-600">
-                    {sale.productName}
+                    {product.name}
                   </h3>
                 </Link>
 
@@ -187,20 +207,24 @@ export default function FlashSales() {
                 <div className="mb-2 md:mb-3">
                   <div className="flex items-center gap-1 md:gap-2 mb-0.5 md:mb-1">
                     <span className="text-base md:text-lg lg:text-xl font-bold text-purple-600">
-                      ₹{sale.salePrice}
+                      ₹{product.price}
                     </span>
-                    <span className="text-[10px] md:text-xs text-gray-500 line-through">
-                      ₹{sale.originalPrice}
-                    </span>
+                    {product.originalPrice && (
+                      <span className="text-[10px] md:text-xs text-gray-500 line-through">
+                        ₹{product.originalPrice}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-[10px] md:text-xs text-green-600 font-semibold">
-                      Save ₹{sale.originalPrice - sale.salePrice}
-                    </div>
+                    {product.originalPrice && (
+                      <div className="text-[10px] md:text-xs text-green-600 font-semibold">
+                        Save ₹{product.originalPrice - product.price}
+                      </div>
+                    )}
                     
                     {/* Add to Cart Button */}
                     <button 
-                      onClick={(e) => handleAddToCart(e, sale.productId)}
+                      onClick={(e) => handleAddToCart(e, product.id)}
                       disabled={remainingStock === 0}
                       className={`${
                         remainingStock === 0 
@@ -221,7 +245,7 @@ export default function FlashSales() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
                   <span className="text-[10px] md:text-xs text-gray-600">Ends in: </span>
                   <span className="text-[10px] md:text-xs text-red-600 font-semibold">
-                    {timeLeft[sale.id] || 'Loading...'}
+                    {timeLeft[product.id] || 'Loading...'}
                   </span>
                 </div>
               </div>

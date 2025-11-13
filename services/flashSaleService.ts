@@ -131,12 +131,26 @@ export const getFlashSaleByProductId = async (productId: string): Promise<FlashS
 // Add new flash sale (Admin function)
 export const addFlashSale = async (flashSaleData: Omit<FlashSale, 'id' | 'createdAt' | 'updatedAt' | 'soldCount'>): Promise<string> => {
   try {
+    // Create flash sale document
     const docRef = await addDoc(flashSalesCollection, {
       ...flashSaleData,
       startDate: Timestamp.fromDate(flashSaleData.startDate),
       endDate: Timestamp.fromDate(flashSaleData.endDate),
       soldCount: 0,
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update the product document with flash sale fields
+    const productRef = doc(db, 'products', flashSaleData.productId);
+    await updateDoc(productRef, {
+      isOnFlashSale: true,
+      originalPrice: flashSaleData.originalPrice,
+      price: flashSaleData.salePrice,
+      flashSaleEndDate: Timestamp.fromDate(flashSaleData.endDate),
+      flashSaleDiscountPercentage: flashSaleData.discountPercentage,
+      flashSaleSoldCount: 0,
+      flashSaleStockLimit: flashSaleData.stockLimit,
       updatedAt: serverTimestamp(),
     });
     
@@ -152,6 +166,10 @@ export const updateFlashSale = async (
   flashSaleData: Partial<Omit<FlashSale, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<void> => {
   try {
+    // Get the current flash sale to get the product ID
+    const currentSale = await getFlashSaleById(id);
+    if (!currentSale) throw new Error('Flash sale not found');
+    
     const docRef = doc(db, 'flashSales', id);
     const updateData: any = {
       ...flashSaleData,
@@ -167,6 +185,33 @@ export const updateFlashSale = async (
     }
     
     await updateDoc(docRef, updateData);
+    
+    // Update the product document with new flash sale fields
+    const productRef = doc(db, 'products', currentSale.productId);
+    const productUpdateData: any = {
+      updatedAt: serverTimestamp(),
+    };
+    
+    if (flashSaleData.salePrice !== undefined) {
+      productUpdateData.price = flashSaleData.salePrice;
+    }
+    if (flashSaleData.originalPrice !== undefined) {
+      productUpdateData.originalPrice = flashSaleData.originalPrice;
+    }
+    if (flashSaleData.endDate !== undefined) {
+      productUpdateData.flashSaleEndDate = Timestamp.fromDate(flashSaleData.endDate);
+    }
+    if (flashSaleData.discountPercentage !== undefined) {
+      productUpdateData.flashSaleDiscountPercentage = flashSaleData.discountPercentage;
+    }
+    if (flashSaleData.stockLimit !== undefined) {
+      productUpdateData.flashSaleStockLimit = flashSaleData.stockLimit;
+    }
+    if (flashSaleData.isActive !== undefined) {
+      productUpdateData.isOnFlashSale = flashSaleData.isActive;
+    }
+    
+    await updateDoc(productRef, productUpdateData);
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -175,9 +220,21 @@ export const updateFlashSale = async (
 // Increment sold count when a flash sale product is purchased
 export const incrementFlashSaleSold = async (id: string): Promise<void> => {
   try {
+    // Get the flash sale to get the product ID
+    const flashSale = await getFlashSaleById(id);
+    if (!flashSale) throw new Error('Flash sale not found');
+    
+    // Update flash sale sold count
     const docRef = doc(db, 'flashSales', id);
     await updateDoc(docRef, {
       soldCount: increment(1),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update product flash sale sold count
+    const productRef = doc(db, 'products', flashSale.productId);
+    await updateDoc(productRef, {
+      flashSaleSoldCount: increment(1),
       updatedAt: serverTimestamp(),
     });
   } catch (error: any) {
@@ -188,7 +245,25 @@ export const incrementFlashSaleSold = async (id: string): Promise<void> => {
 // Delete flash sale (Admin function)
 export const deleteFlashSale = async (id: string): Promise<void> => {
   try {
+    // Get the flash sale to get the product ID
+    const flashSale = await getFlashSaleById(id);
+    if (!flashSale) throw new Error('Flash sale not found');
+    
+    // Delete flash sale document
     await deleteDoc(doc(db, 'flashSales', id));
+    
+    // Clear flash sale fields from product and restore original price
+    const productRef = doc(db, 'products', flashSale.productId);
+    await updateDoc(productRef, {
+      isOnFlashSale: false,
+      price: flashSale.originalPrice, // Restore original price
+      originalPrice: null,
+      flashSaleEndDate: null,
+      flashSaleDiscountPercentage: null,
+      flashSaleSoldCount: null,
+      flashSaleStockLimit: null,
+      updatedAt: serverTimestamp(),
+    });
   } catch (error: any) {
     throw new Error(error.message);
   }

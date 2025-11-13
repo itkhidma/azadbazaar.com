@@ -60,6 +60,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState('cod'); // cod, card, upi, netbanking
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Compute selected address from ID
   const selectedAddress = savedAddresses.find(addr => addr.id === selectedAddressId);
@@ -255,6 +256,12 @@ export default function CheckoutPage() {
     // Check if address is selected
     if (!selectedAddress) {
       alert('Please select a delivery address');
+      return;
+    }
+    
+    // Check if terms are accepted
+    if (!termsAccepted) {
+      alert('Please accept the Terms and Conditions to proceed');
       return;
     }
     
@@ -771,14 +778,20 @@ export default function CheckoutPage() {
                   {/* Terms */}
                   <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
                     <label className="flex items-start gap-3 cursor-pointer">
-                      <input type="checkbox" className="mt-1" required />
+                      <input 
+                        type="checkbox" 
+                        className="mt-1" 
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        required 
+                      />
                       <span className="text-sm text-gray-700">
                         I agree to the{' '}
-                        <Link href="/terms" className="text-purple-600 hover:underline">
+                        <Link href="/terms" className="text-purple-600 hover:underline" target="_blank">
                           Terms and Conditions
                         </Link>{' '}
                         and{' '}
-                        <Link href="/privacy" className="text-purple-600 hover:underline">
+                        <Link href="/privacy" className="text-purple-600 hover:underline" target="_blank">
                           Privacy Policy
                         </Link>
                       </span>
@@ -794,7 +807,7 @@ export default function CheckoutPage() {
                     </button>
                     <button
                       onClick={handlePlaceOrder}
-                      disabled={loading}
+                      disabled={loading || !termsAccepted}
                       className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (

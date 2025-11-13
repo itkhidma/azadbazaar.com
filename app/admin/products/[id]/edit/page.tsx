@@ -228,7 +228,7 @@ export default function EditProductPage() {
     e.preventDefault();
     setError('');
     
-    if (!formData.name || !formData.description || !formData.price || !formData.stock || !formData.category) {
+    if (!formData.name || !formData.description || !formData.price || !formData.category) {
       setError('Please fill in all required fields');
       return;
     }
@@ -270,7 +270,7 @@ export default function EditProductPage() {
         description: formData.description,
         price: parseFloat(formData.price),
         cost: parseFloat(formData.cost) || 0,
-        stock: parseInt(formData.stock),
+        stock: formData.stock ? parseInt(formData.stock) : 1,
         category: formData.category,
         imageUrls: allImageUrls,
       };
@@ -467,7 +467,7 @@ export default function EditProductPage() {
           {/* Stock */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Stock Quantity <span className="text-red-500">*</span>
+              Stock Quantity
             </label>
             <input
               type="number"
@@ -476,7 +476,6 @@ export default function EditProductPage() {
               onChange={handleChange}
               min="0"
               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              required
             />
           </div>
 

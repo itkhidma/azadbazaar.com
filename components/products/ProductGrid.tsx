@@ -75,9 +75,27 @@ export default function ProductGrid({ products }: ProductGridProps) {
               dangerouslySetInnerHTML={{ __html: product.description }}
             />
             <div className="flex items-center justify-between">
-              <span className="text-lg font-bold text-purple-600">
-                ₹{product.price}
-              </span>
+              {product.isOnFlashSale && product.flashSaleEndDate && product.flashSaleEndDate > new Date() ? (
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-purple-600">
+                      ₹{product.price}
+                    </span>
+                    {product.originalPrice && (
+                      <span className="text-xs text-gray-500 line-through">
+                        ₹{product.originalPrice}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-green-600 font-semibold">
+                    ⚡ Flash Sale
+                  </span>
+                </div>
+              ) : (
+                <span className="text-lg font-bold text-purple-600">
+                  ₹{product.price}
+                </span>
+              )}
               <button className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition">
                 View
               </button>

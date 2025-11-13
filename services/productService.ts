@@ -29,6 +29,7 @@ export const getAllProducts = async (): Promise<Product[]> => {
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+      flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
     })) as Product[];
   } catch (error: any) {
     throw new Error(error.message);
@@ -48,6 +49,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
         ...data,
         createdAt: (data.createdAt as Timestamp).toDate(),
         updatedAt: (data.updatedAt as Timestamp).toDate(),
+        flashSaleEndDate: data.flashSaleEndDate ? (data.flashSaleEndDate as Timestamp).toDate() : undefined,
       } as Product;
     }
     
@@ -72,6 +74,7 @@ export const getProductsByCategory = async (category: string): Promise<Product[]
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+      flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
     })) as Product[];
   } catch (error: any) {
     throw new Error(error.message);
@@ -90,6 +93,7 @@ export const searchProducts = async (searchTerm: string): Promise<Product[]> => 
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+      flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
     })) as Product[];
     
     return products.filter(product => 
@@ -160,6 +164,7 @@ export const getBestSellerProducts = async (limitCount: number = 8): Promise<Pro
         ...doc.data(),
         createdAt: (doc.data().createdAt as Timestamp).toDate(),
         updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+        flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
       })) as Product[];
     }
     
@@ -178,6 +183,7 @@ export const getBestSellerProducts = async (limitCount: number = 8): Promise<Pro
         ...doc.data(),
         createdAt: (doc.data().createdAt as Timestamp).toDate(),
         updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+        flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
       })) as Product[];
     }
     
@@ -194,6 +200,7 @@ export const getBestSellerProducts = async (limitCount: number = 8): Promise<Pro
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+      flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
     })) as Product[];
   }
 };
@@ -214,7 +221,41 @@ export const getNewArrivals = async (limitCount: number = 8): Promise<Product[]>
       ...doc.data(),
       createdAt: (doc.data().createdAt as Timestamp).toDate(),
       updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+      flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
     })) as Product[];
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};
+
+// Get products with active flash sales
+export const getFlashSaleProducts = async (): Promise<Product[]> => {
+  try {
+    const now = new Date();
+    const q = query(
+      productsCollection,
+      where('isOnFlashSale', '==', true),
+      orderBy('flashSaleEndDate', 'asc')
+    );
+    
+    const snapshot = await getDocs(q);
+    
+    const products = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: (doc.data().createdAt as Timestamp).toDate(),
+      updatedAt: (doc.data().updatedAt as Timestamp).toDate(),
+      flashSaleEndDate: doc.data().flashSaleEndDate ? (doc.data().flashSaleEndDate as Timestamp).toDate() : undefined,
+    })) as Product[];
+    
+    // Filter out expired sales and sold out items
+    return products.filter(product => {
+      if (!product.flashSaleEndDate) return false;
+      const isNotExpired = product.flashSaleEndDate > now;
+      const hasStock = !product.flashSaleSoldCount || !product.flashSaleStockLimit || 
+                      product.flashSaleSoldCount < product.flashSaleStockLimit;
+      return isNotExpired && hasStock;
+    });
   } catch (error: any) {
     throw new Error(error.message);
   }

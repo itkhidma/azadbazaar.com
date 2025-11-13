@@ -201,10 +201,37 @@ export default function ProductDetailsPage() {
           </h1>
 
           {/* Price */}
-          <div className="flex items-baseline gap-3 mb-4 sm:mb-6">
-            <span className="text-3xl sm:text-4xl font-bold text-purple-600">
-              ₹{product.price}
-            </span>
+          <div className="mb-4 sm:mb-6">
+            {product.isOnFlashSale && product.flashSaleEndDate && product.flashSaleEndDate > new Date() ? (
+              <div>
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className="text-3xl sm:text-4xl font-bold text-purple-600">
+                    ₹{product.price}
+                  </span>
+                  {product.originalPrice && (
+                    <span className="text-xl sm:text-2xl text-gray-500 line-through">
+                      ₹{product.originalPrice}
+                    </span>
+                  )}
+                  {product.flashSaleDiscountPercentage && (
+                    <span className="bg-gradient-to-r from-purple-200 to-violet-200 text-purple-600 text-sm font-bold px-3 py-1 rounded">
+                      -{product.flashSaleDiscountPercentage}% OFF
+                    </span>
+                  )}
+                </div>
+                {product.originalPrice && (
+                  <p className="text-sm text-green-600 font-semibold">
+                    ⚡ Flash Sale - Save ₹{product.originalPrice - product.price}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl font-bold text-purple-600">
+                  ₹{product.price}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Stock Status */}

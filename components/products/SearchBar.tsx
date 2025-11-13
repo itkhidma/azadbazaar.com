@@ -240,9 +240,9 @@ export default function SearchBar({ className, placeholder = "Search products...
               </div>
 
               {/* Price */}
-              <div className="text-sm font-semibold text-purple-600">
+              {/* <div className="text-sm font-semibold text-purple-600">
                 ₹{product.price}
-              </div>
+              </div> */}
             </div>
           ))}
 
