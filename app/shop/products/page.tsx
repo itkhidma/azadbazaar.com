@@ -2,19 +2,23 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getAllProducts, searchProducts } from '@/services/productService';
+import { getAllProducts, searchProducts, getProductsByCategory } from '@/services/productService';
+import { getCategoryById } from '@/services/categoryService';
 import ProductGrid from '@/components/products/ProductGrid';
 import { Product } from '@/types';
+import { Category } from '@/types';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('search');
+  const categoryId = searchParams.get('category');
   const [products, setProducts] = useState<Product[]>([]);
+  const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProducts();
-  }, [searchQuery]);
+  }, [searchQuery, categoryId]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -22,9 +26,17 @@ function ProductsContent() {
       if (searchQuery) {
         const results = await searchProducts(searchQuery);
         setProducts(results);
+        setCategory(null);
+      } else if (categoryId) {
+        const results = await getProductsByCategory(categoryId);
+        setProducts(results);
+        // Load category info
+        const categoryData = await getCategoryById(categoryId);
+        setCategory(categoryData);
       } else {
         const allProducts = await getAllProducts();
         setProducts(allProducts);
+        setCategory(null);
       }
     } catch (error) {
       console.error('Error loading products:', error);
@@ -63,6 +75,15 @@ function ProductsContent() {
             </h1>
             <p className="text-gray-600">
               {products.length} {products.length === 1 ? 'product' : 'products'} found
+            </p>
+          </>
+        ) : categoryId && category ? (
+          <>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {category.name}
+            </h1>
+            <p className="text-gray-600">
+              {products.length} {products.length === 1 ? 'product' : 'products'} in this category
             </p>
           </>
         ) : (
