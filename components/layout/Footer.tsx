@@ -102,12 +102,12 @@ export default function Footer() {
                   Shopping Cart
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="/shop/wishlist" className="text-sm hover:text-purple-400 transition-colors flex items-center gap-2">
                   <span className="text-purple-500">→</span>
                   Wishlist
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/shop/orders" className="text-sm hover:text-purple-400 transition-colors flex items-center gap-2">
                   <span className="text-purple-500">→</span>
@@ -181,12 +181,7 @@ export default function Footer() {
                   +91 123 456 7890
                 </a>
               </li>
-              <li className="flex items-center gap-3 text-sm">
-                <svg className="w-5 h-5 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-gray-400">Mon - Sat: 9:00 AM - 6:00 PM</span>
-              </li>
+            
             </ul>
           </div>
         </div>

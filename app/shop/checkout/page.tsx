@@ -61,6 +61,7 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState('cod'); // cod, card, upi, netbanking
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [shakeTerms, setShakeTerms] = useState(false);
 
   // Handle browser back button
   useEffect(() => {
@@ -263,6 +264,17 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle place order button click
+  const handlePlaceOrderClick = () => {
+    if (!termsAccepted) {
+      // Trigger shake animation
+      setShakeTerms(true);
+      setTimeout(() => setShakeTerms(false), 650);
+      return;
+    }
+    handlePlaceOrder();
   };
 
   const handlePlaceOrder = async () => {
@@ -797,7 +809,11 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Terms */}
-                  <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className={`mb-6 p-4 rounded-lg border transition-all duration-200 ${
+                    shakeTerms 
+                      ? 'bg-red-50 border-red-400 animate-shake' 
+                      : 'bg-purple-50 border-purple-200'
+                  }`}>
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -817,6 +833,11 @@ export default function CheckoutPage() {
                         </Link>
                       </span>
                     </label>
+                    {shakeTerms && !termsAccepted && (
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        Please accept the Terms and Conditions to continue
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-4">
@@ -827,8 +848,8 @@ export default function CheckoutPage() {
                       Back
                     </button>
                     <button
-                      onClick={handlePlaceOrder}
-                      disabled={loading || !termsAccepted}
+                      onClick={handlePlaceOrderClick}
+                      disabled={loading}
                       className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (

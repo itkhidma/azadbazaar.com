@@ -28,8 +28,8 @@ export default function CategoryGrid() {
   if (loading) {
     return (
       <div className="bg-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="animate-pulse flex gap-4 overflow-x-auto">
+        <div className="container mx-auto">
+          <div className="animate-pulse flex gap-4 overflow-x-auto px-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="flex flex-col items-center flex-shrink-0">
                 <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
@@ -48,9 +48,9 @@ export default function CategoryGrid() {
 
   return (
     <div className="bg-white py-6 border-b border-gray-100">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto">
         {/* Centered Category Grid */}
-        <div className="flex gap-4 md:gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-2 justify-center">
+        <div className="flex gap-4 md:gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-2 px-4 md:justify-center">
           {categories.map((category) => (
             <Link
               key={category.id}
